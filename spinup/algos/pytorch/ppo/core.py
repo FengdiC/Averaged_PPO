@@ -103,6 +103,15 @@ class MLPCritic(nn.Module):
     def forward(self, obs):
         return torch.squeeze(self.v_net(obs), -1) # Critical to ensure v has right shape.
 
+class MLPGamma(nn.Module):
+
+    def __init__(self, obs_dim, hidden_sizes, activation):
+        super().__init__()
+        self.w_net = mlp([obs_dim] + list(hidden_sizes) + [1], activation)
+
+    def forward(self, obs):
+        return torch.squeeze(self.w_net(obs), -1) # Critical to ensure v has right shape
+
 
 class NNGammaCritic(nn.Module):
     def __init__(self, o_dim, hidden_sizes,activation):
@@ -174,6 +183,36 @@ class MLPWeightedActorCritic(nn.Module):
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v,w = self.v(obs)
         return a.numpy(), v.numpy(),w.numpy(), logp_a.numpy()
+
+    def act(self, obs):
+        return self.step(obs)[0]
+
+
+class MLPSeparateWeightedActorCritic(nn.Module):
+    def __init__(self, observation_space, action_space,
+                 hidden_sizes=(64,64), activation=nn.Tanh):
+        super().__init__()
+
+        obs_dim = observation_space.shape[0]
+
+        # policy builder depends on action space
+        if isinstance(action_space, Box):
+            self.pi = MLPGaussianActor(obs_dim, action_space.shape[0], hidden_sizes, activation)
+        elif isinstance(action_space, Discrete):
+            self.pi = MLPCategoricalActor(obs_dim, action_space.n, hidden_sizes, activation)
+
+        # build value function
+        self.v  = MLPCritic(obs_dim, hidden_sizes, activation)
+        self.w = MLPGamma(obs_dim, hidden_sizes, activation)
+
+    def step(self, obs):
+        with torch.no_grad():
+            pi = self.pi._distribution(obs)
+            a = pi.sample()
+            logp_a = self.pi._log_prob_from_distribution(pi, a)
+            v = self.v(obs)
+            w = self.w(obs)
+        return a.numpy(), v.numpy(), w.numpy(), logp_a.numpy()
 
     def act(self, obs):
         return self.step(obs)[0]
