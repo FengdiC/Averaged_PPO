@@ -202,7 +202,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     logger.save_config(locals())
 
     # Random seed
-    seed += 10000 * proc_id()
+    seed =args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -478,7 +478,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     logger.save_config(locals())
 
     # Random seed
-    seed += 10000 * proc_id()
+    seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -754,7 +754,7 @@ def separate_weighted_ppo(env_fn, actor_critic=core.MLPSeparateWeightedActorCrit
     logger.save_config(locals())
 
     # Random seed
-    seed += 10000 * proc_id()
+    seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -933,8 +933,10 @@ def separate_weighted_ppo(env_fn, actor_critic=core.MLPSeparateWeightedActorCrit
 def argsparser():
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument('--log_dir', type=str, default='./')
     parser.add_argument('--env', type=str, default='HalfCheetah-v2')
     parser.add_argument('--hid', type=list, default=[64,32])
+    parser.add_argument('--critic_hid', type=list, default=[128, 128])
     parser.add_argument('--l', type=int, default=2)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--seed', '-s', type=int, default=0)
@@ -943,6 +945,8 @@ def argsparser():
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--naive', type=bool, default=False)
     parser.add_argument('--exp_name', type=str, default='ppo')
+    parser.add_argument('--clip_ratio', type=float, default=0.2)
+    parser.add_argument('--pi_lr', type=float, default=3e-4)
 
     parser.add_argument('--scale', type=float, default=1.0)
     parser.add_argument('--gamma_coef',  type=float, default=1.0)
@@ -960,11 +964,12 @@ if __name__ == '__main__':
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
     ppo(lambda : gym.make(args.env), actor_critic=core.MLPActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,
-        seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,
+        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,clip_ratio=args.clip_ratio,
+        pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
         logger_kwargs=logger_kwargs,naive=args.naive)
 
     weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,
-        seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
+        ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=args.critic_hid),
+        gamma=args.gamma,clip_ratio=args.clip_ratio,
+        pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
         logger_kwargs=logger_kwargs, scale=args.scale,gamma_coef=args.gamma_coef)
