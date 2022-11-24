@@ -11,14 +11,14 @@ import itertools
 import numpy as np
 import gym
 
-param = {'vf_lr': [3e-3,1e-3,6e-4,3e-4],'target_kl':[0.06,0.03,0.01,0.006],'pi_lr':[9e-4,6e-4,3e-4,1e-4]}
+param = {'target_kl':[0.06,0.03,0.01],'pi_lr':[6e-4,3e-4,1e-4]}
 
 args = argsparser()
-seeds = range(5)
+seeds = range(3)
 
 logger.configure('./data', ['csv'], log_suffix='Hopper-naive-ppo-tune')
 
-for values in list(itertools.product(param['vf_lr'], param['target_kl'], param['pi_lr'])):
+for values in list(itertools.product( param['target_kl'], param['pi_lr'])):
     returns = []
     for seed in seeds:
         args.seed = seed
@@ -26,8 +26,8 @@ for values in list(itertools.product(param['vf_lr'], param['target_kl'], param['
         checkpoint = 4000
         result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
         ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,
-        seed=seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=values[0],
-        target_kl=values[1],pi_lr = values[2],naive=True)
+        seed=seed, steps_per_epoch=args.steps, epochs=args.epochs,
+        target_kl=values[0],pi_lr = values[1],naive=True)
 
         ret = np.array(result)
         print(ret.shape)
