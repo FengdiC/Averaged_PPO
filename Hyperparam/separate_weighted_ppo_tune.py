@@ -3,7 +3,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 granddir = os.path.dirname(parentdir)
 sys.path.insert(0, parentdir)
-from spinup.algos.pytorch.ppo.ppo import argsparser,weighted_ppo,ppo
+from spinup.algos.pytorch.ppo.ppo import argsparser,weighted_ppo,ppo, separate_weighted_ppo
 from spinup.algos.pytorch.ppo import core
 sys.path.insert(0,granddir)
 from Components import logger
@@ -11,23 +11,23 @@ import itertools
 import numpy as np
 import gym
 
-param = {'target_kl':[0.06,0.03,0.01],'pi_lr':[6e-4,3e-4,1e-4]}
+param = {'scale':[10,20,40,80],'w_lr':[1e-3,3e-4],'target_kl':[0.06,0.03,0.01],'pi_lr':[9e-4,6e-4,3e-4]}
 
 args = argsparser()
 seeds = range(3)
 
-logger.configure('./data', ['csv'], log_suffix='Hopper-naive-ppo-tune')
+logger.configure('./data', ['csv'], log_suffix='Hopper-separate-weighted-ppo-tune')
 
-for values in list(itertools.product( param['target_kl'], param['pi_lr'])):
+for values in list(itertools.product( param['scale'], param['w_lr'],param['target_kl'],param['pi_lr'])):
     returns = []
     for seed in seeds:
         args.seed = seed
 
         checkpoint = 4000
-        result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,
-        seed=seed, steps_per_epoch=args.steps, epochs=args.epochs,
-        target_kl=values[0],pi_lr = values[1],naive=True)
+        result = separate_weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPSeparateWeightedActorCritic,
+        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma, target_kl=values[2],pi_lr=values[3],
+        seed=seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=3e-3,
+        scale=values[0],w_lr=values[1])
 
         ret = np.array(result)
         print(ret.shape)
