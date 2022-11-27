@@ -942,7 +942,7 @@ def argsparser():
     parser.add_argument('--seed', '-s', type=int, default=0)
     parser.add_argument('--cpu', type=int, default=4)
     parser.add_argument('--steps', type=int, default=4000)
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=250)
     parser.add_argument('--naive', type=bool, default=False)
     parser.add_argument('--exp_name', type=str, default='ppo')
     parser.add_argument('--clip_ratio', type=float, default=0.2)

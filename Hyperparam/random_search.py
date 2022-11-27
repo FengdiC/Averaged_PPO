@@ -9,8 +9,11 @@ def random_search(seed):
     vf_lr = rng.uniform(low=3e-4, high=0.01)
     pi_lr = rng.uniform(low=1e-4, high=1e-3)
     steps_per_epoch = rng.choice([2500,4000,5500])
+    gamma = rng.choice([0.95,0.97,0.99,0.995])
     critic_hid = rng.choice(["[32,32]","[64,64]","[64,32]","[128,128]"])
 
     hyperparameters = {"gamma_coef":gamma_coef, "scale":scale, "target_kl":target_kl,
                        "vf_lr":vf_lr, "pi_lr":pi_lr, "steps_per_epoch":steps_per_epoch,
-                       "critic_hid":critic_hid}
+                       "critic_hid":critic_hid,"gamma":gamma}
+
+    return hyperparameters
