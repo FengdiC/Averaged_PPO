@@ -202,7 +202,6 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     logger.save_config(locals())
 
     # Random seed
-    seed =args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -478,7 +477,6 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     logger.save_config(locals())
 
     # Random seed
-    seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
 
@@ -754,7 +752,6 @@ def separate_weighted_ppo(env_fn, actor_critic=core.MLPSeparateWeightedActorCrit
     logger.save_config(locals())
 
     # Random seed
-    seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
 
