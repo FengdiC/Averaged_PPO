@@ -1,4 +1,11 @@
 import numpy as np
+import os
+import torch
+
+def set_one_thread():
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+    torch.set_num_threads(1)
 
 def random_search(seed):
     rng = np.random.RandomState(seed=seed)
