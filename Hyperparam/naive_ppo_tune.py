@@ -10,7 +10,7 @@ from Components import logger
 import itertools
 import numpy as np
 import gym
-from random_search import random_search
+from random_search import random_search,set_one_thread
 
 args = argsparser()
 seeds = range(3)
