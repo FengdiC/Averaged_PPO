@@ -33,6 +33,7 @@ for seed in seeds:
     print(ret.shape)
     returns.append(ret)
     name = list(hyperparam.values())
+    name = [str(s) for s in name]
     name.append(str(seed))
     print("hyperparam", '-'.join(name))
     logger.logkv("hyperparam", '-'.join(name))
