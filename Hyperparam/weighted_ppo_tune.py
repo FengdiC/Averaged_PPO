@@ -33,7 +33,7 @@ for seed in seeds:
     ret = np.array(result)
     print(ret.shape)
     returns.append(ret)
-    name = hyperparam.values()
+    name = liat(hyperparam.values())
     name.append(str(seed))
     print("hyperparam", '-'.join(name))
     logger.logkv("hyperparam", '-'.join(name))
