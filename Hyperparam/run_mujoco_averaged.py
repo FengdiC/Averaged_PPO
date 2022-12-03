@@ -11,39 +11,26 @@ import itertools
 import numpy as np
 import gym
 
-param = {'env':['InvertedPendulum-v4','InvertedDoublePendulum-v4','Reacher-v4']}
+param = {'env':['Hopper-v4','Swimmer-v4','Ant-v4']}
 
 args = argsparser()
-seeds = range(10)
 
-logger.configure('./data', ['csv'], log_suffix='mujoco_ppo_weighted_simple')
+logger.configure(args.log_dir, ['csv'], log_suffix='mujoco_ppo_weighted_simple='+str(args.seed))
 
 for values in list(itertools.product(param['env'])):
-    returns = []
-    for seed in seeds:
-        args.seed = seed
 
-        checkpoint = 4000
-        result = weighted_ppo(lambda: gym.make(values[0]), actor_critic=core.MLPWeightedActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,
-        seed=seed, steps_per_epoch=args.steps, epochs=250,scale=40,gamma_coef=3.0)
+    checkpoint = 4000
+    result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
+                          ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=[128,128]),
+                          gamma=args.gamma, target_kl=0.41150841591362675, vf_lr=0.000704457269534924,
+                          seed=args.seed, steps_per_epoch=4000, epochs=500,
+                          scale=50.4649909898754, gamma_coef=8.939315499216416)
 
-        ret = np.array(result)
-        print(ret.shape)
-        returns.append(ret)
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        print("hyperparam", '-'.join(name))
-        logger.logkv("hyperparam", '-'.join(name))
-        for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), ret[n])
-        logger.dumpkvs()
-
-    ret = np.array(returns)
+    ret = np.array(result)
     print(ret.shape)
-    ret = np.mean(ret, axis=0)
     name = [str(k) for k in values]
-    name.append('mean')
+    name.append(str(args.seed))
+    print("hyperparam", '-'.join(name))
     logger.logkv("hyperparam", '-'.join(name))
     for n in range(ret.shape[0]):
         logger.logkv(str((n + 1) * checkpoint), ret[n])
