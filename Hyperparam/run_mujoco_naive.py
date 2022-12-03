@@ -19,6 +19,7 @@ seeds = range(10)
 logger.configure(args.log_dir, ['csv'], log_suffix='mujoco_ppo_naive_tuned='+str(args.seed))
 
 for values in list(itertools.product(param['env'])):
+    args.env = values[0]
     args.gamma = 0.995
     args.hid = [64,64]
     args.steps = 5500

@@ -18,7 +18,7 @@ args = argsparser()
 logger.configure(args.log_dir, ['csv'], log_suffix='mujoco_ppo_weighted_simple='+str(args.seed))
 
 for values in list(itertools.product(param['env'])):
-
+    args.env = values[0]
     checkpoint = 4000
     result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
                           ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=[128,128]),
