@@ -23,11 +23,11 @@ logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-naive-ppo-tune-'+str(
 returns = []
 for seed in seeds:
     hyperparam = random_search(args.seed)
-    checkpoint = hyperparam['steps_per_epoch']
+    checkpoint = 4000
     result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
-    ac_kwargs=dict(hidden_sizes=args.hid),pi_lr=hyperparam['pi_lr'],
-    gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
-    seed=seed, steps_per_epoch=hyperparam['steps_per_epoch'], epochs=args.epochs,naive=True)
+                ac_kwargs=dict(hidden_sizes=args.hid),gamma=hyperparam['gamma'],
+                target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
+                seed=seed,naive=True)
 
     ret = np.array(result)
     print(ret.shape)

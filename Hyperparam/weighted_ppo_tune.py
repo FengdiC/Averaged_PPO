@@ -23,18 +23,17 @@ logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-weighted-ppo-tune-'+s
 returns = []
 for seed in seeds:
     hyperparam = random_search(args.seed)
-    checkpoint = hyperparam['steps_per_epoch']
+    checkpoint = 4000
     result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
     ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=hyperparam['critic_hid']),
-    gamma=args.gamma, target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
-    seed=seed, steps_per_epoch=hyperparam['steps_per_epoch'], epochs=args.epochs,
-    scale=hyperparam['scale'],gamma_coef=hyperparam['gamma_coef'])
+    gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
+    seed=seed,scale=hyperparam['scale'],gamma_coef=hyperparam['gamma_coef'])
 
     ret = np.array(result)
     print(ret.shape)
     returns.append(ret)
-    name = list(hyperparam.values())
-    name = [str(s) for s in name]
+    name = list(hyperparam.keys())
+    name = [str(key)+'-'+str(hyperparam[key]) for key in name]
     name.append(str(seed))
     print("hyperparam", '-'.join(name))
     logger.logkv("hyperparam", '-'.join(name))
