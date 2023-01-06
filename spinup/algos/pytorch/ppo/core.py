@@ -117,6 +117,7 @@ class NNGammaCritic(nn.Module):
     def __init__(self, o_dim, hidden_sizes,activation):
         super(NNGammaCritic, self).__init__()
         sizes = [o_dim] + list(hidden_sizes)
+        print(sizes)
         layers = []
         for j in range(len(sizes) - 1):
             layers += [nn.Linear(sizes[j], sizes[j + 1]),activation()]
