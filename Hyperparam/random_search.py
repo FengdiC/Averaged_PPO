@@ -20,6 +20,6 @@ def random_search(seed):
     critic_hid = hid[critic_hid]
 
     hyperparameters = {"gamma_coef":gamma_coef, "scale":scale, "target_kl":target_kl,
-                       "vf_lr":vf_lr,"critic_hid":critic_hid,"gamma":gamma}
+                       "vf_lr":vf_lr,"critic_hid":list(critic_hid),"gamma":gamma}
 
     return hyperparameters
