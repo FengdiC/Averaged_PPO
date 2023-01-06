@@ -4,14 +4,14 @@
 #SBATCH --time=0-12:00
 #SBATCH --output=%N-%j-naive.out
 #SBATCH --account=def-ashique
-#SBATCH --array=0-9
+#SBATCH --array=1-240
 
 source $HOME/Documents/ENV/bin/activate
 module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
-python spinningup/Hyperparam/run_mujoco_naive.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
+python Hyperparam/naive_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
 
 echo "Baseline job $seed took $SECONDS"
 sleep 12h

@@ -10,10 +10,10 @@ def set_one_thread():
 def random_search(seed):
     rng = np.random.RandomState(seed=seed)
 
-    gamma_coef = rng.uniform(low=0.1, high=10)
-    scale = rng.uniform(low=1, high=150)
-    target_kl = rng.uniform(low=0.005, high=0.5)
-    vf_lr = rng.uniform(low=3e-4, high=0.005)
+    gamma_coef = rng.ranint(low=10, high=1000)/100.0
+    scale = rng.randint(low=1, high=150)
+    target_kl = rng.randint(low=0.005*1000, high=0.5*1000)/1000.0
+    vf_lr = rng.randint(low=3, high=50)/10000.0
     gamma = rng.choice([0.9,0.95,0.97,0.99,0.995])
     hid = np.array([[64,64],[128,128],[256,256]])
     critic_hid = rng.choice(range(hid.shape[0]))
