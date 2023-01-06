@@ -26,7 +26,7 @@ for seed in seeds:
     checkpoint = 4000
     result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
                 ac_kwargs=dict(hidden_sizes=args.hid),gamma=hyperparam['gamma'],
-                target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
+                target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],epochs=args.epochs,
                 seed=seed,naive=True)
 
     ret = np.array(result)

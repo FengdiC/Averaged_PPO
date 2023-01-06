@@ -18,7 +18,6 @@ def random_search(seed):
     hid = np.array([[64,64],[128,128],[256,256]])
     critic_hid = rng.choice(range(hid.shape[0]))
     critic_hid = hid[critic_hid]
-    print(critic_hid)
 
     hyperparameters = {"gamma_coef":gamma_coef, "scale":scale, "target_kl":target_kl,
                        "vf_lr":vf_lr,"critic_hid":list(critic_hid),"gamma":gamma}
