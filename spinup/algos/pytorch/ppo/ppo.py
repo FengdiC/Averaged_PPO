@@ -931,7 +931,7 @@ def argsparser():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir', type=str, default='./')
-    parser.add_argument('--env', type=str, default='HalfCheetah-v2')
+    parser.add_argument('--env', type=str, default='Hopper-v4')
     parser.add_argument('--hid', type=list, default=[64,32])
     parser.add_argument('--critic_hid', type=list, default=[128, 128])
     parser.add_argument('--l', type=int, default=2)
