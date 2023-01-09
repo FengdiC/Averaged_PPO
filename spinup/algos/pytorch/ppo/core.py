@@ -123,7 +123,7 @@ class NNGammaCritic(nn.Module):
             layers += [nn.Linear(sizes[j], sizes[j + 1]),activation()]
         self.body = nn.Sequential(*layers)
         self.critic = nn.Linear(sizes[-1], 1)
-        self.weight = nn.Sequential(nn.Linear(sizes[-1], 1))
+        self.weight = nn.Sequential(nn.Linear(sizes[-1], 1),activation())
 
     def forward(self, obs):
         obs = obs.float()
@@ -150,7 +150,7 @@ class MLPActorCritic(nn.Module):
             self.pi = MLPCategoricalActor(obs_dim, action_space.n, hidden_sizes, activation)
 
         # build value function
-        self.v  = MLPCritic(obs_dim, hidden_sizes, activation)
+        self.v  = MLPCritic(obs_dim, hidden_sizes, activation=nn.ReLU)
 
     def step(self, obs):
         with torch.no_grad():
