@@ -150,7 +150,7 @@ class MLPActorCritic(nn.Module):
             self.pi = MLPCategoricalActor(obs_dim, action_space.n, hidden_sizes, activation)
 
         # build value function
-        self.v  = MLPCritic(obs_dim, hidden_sizes, activation=nn.ReLU)
+        self.v  = MLPCritic(obs_dim, hidden_sizes, activation)
 
     def step(self, obs):
         with torch.no_grad():
@@ -176,7 +176,7 @@ class MLPWeightedActorCritic(nn.Module):
             self.pi = MLPCategoricalActor(obs_dim, action_space.n, hidden_sizes, activation)
 
         # build value function
-        self.v = NNGammaCritic(obs_dim, critic_hidden_sizes,activation)
+        self.v = NNGammaCritic(obs_dim, critic_hidden_sizes,activation=nn.ReLU)
 
     def step(self, obs):
         with torch.no_grad():
