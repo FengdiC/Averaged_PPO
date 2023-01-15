@@ -26,7 +26,7 @@ for seed in seeds:
     checkpoint = 4000
     result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
     ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=hyperparam['critic_hid']),epochs=args.epochs,
-    gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
+    gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],pi_lr = hyperparam["pi_lr"],
     seed=seed,scale=hyperparam['scale'],gamma_coef=hyperparam['gamma_coef'])
 
     ret = np.array(result)

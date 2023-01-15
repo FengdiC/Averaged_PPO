@@ -234,7 +234,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         clip_adv = torch.clamp(ratio, 1-clip_ratio, 1+clip_ratio) * adv
         loss_pi = -(torch.min(ratio * adv, clip_adv)).mean()
         if naive:
-            loss_pi = -(torch.min(ratio * adv, clip_adv)* gamma ** tim *(1-gamma) * max_ep_len).mean()
+            loss_pi = -(torch.min(ratio * adv, clip_adv)* gamma ** tim).mean()
 
         # Useful extra info
         approx_kl = (logp_old - logp).mean().item()
@@ -508,7 +508,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         _,w = ac.v(obs)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1 - clip_ratio, 1 + clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv) * (w/scale)*(1-gamma) * max_ep_len).mean()
+        loss_pi = -(torch.min(ratio * adv, clip_adv) * (w/scale)).mean()
 
         # Useful extra info
         approx_kl = (logp_old - logp).mean().item()

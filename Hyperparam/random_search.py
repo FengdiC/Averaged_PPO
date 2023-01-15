@@ -10,6 +10,7 @@ def set_one_thread():
 def random_search(seed):
     rng = np.random.RandomState(seed=seed)
 
+    pi_lr = rng.choice([3,9,20,30,40,50])/10000.0
     gamma_coef = rng.randint(low=50, high=500)/100.0
     scale = rng.randint(low=1, high=120)
     target_kl = rng.randint(low=0.01*100, high=0.3*100)/100.0
@@ -19,7 +20,7 @@ def random_search(seed):
     critic_hid = rng.choice(range(hid.shape[0]))
     critic_hid = hid[critic_hid]
 
-    hyperparameters = {"gamma_coef":gamma_coef, "scale":scale, "target_kl":target_kl,
+    hyperparameters = {"pi_lr":pi_lr,"gamma_coef":gamma_coef, "scale":scale, "target_kl":target_kl,
                        "vf_lr":vf_lr,"critic_hid":list(critic_hid),"gamma":gamma}
 
     return hyperparameters

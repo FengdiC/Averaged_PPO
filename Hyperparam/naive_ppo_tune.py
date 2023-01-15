@@ -25,7 +25,7 @@ for seed in seeds:
     hyperparam = random_search(args.seed)
     checkpoint = 4000
     result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
-                ac_kwargs=dict(hidden_sizes=args.hid),gamma=hyperparam['gamma'],
+                ac_kwargs=dict(hidden_sizes=args.hid),gamma=hyperparam['gamma'],pi_lr = hyperparam["pi_lr"],
                 target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],epochs=args.epochs,
                 seed=seed,naive=True)
 
