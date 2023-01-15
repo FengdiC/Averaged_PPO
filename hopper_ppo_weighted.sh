@@ -4,14 +4,15 @@
 #SBATCH --time=0-12:00
 #SBATCH --output=%N-%j.out
 #SBATCH --account=def-ashique
-#SBATCH --array=1-240
+#SBATCH --array=1-10
 
 source $HOME/Documents/ENV/bin/activate
 module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
-python Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
+#python Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
+python Hyperparam/run_mujoco_averaged.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
 
 echo "Baseline job $seed took $SECONDS"
 sleep 12h
