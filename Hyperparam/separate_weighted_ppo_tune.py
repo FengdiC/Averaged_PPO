@@ -10,41 +10,32 @@ from Components import logger
 import itertools
 import numpy as np
 import gym
-
-param = {'scale':[10,20,40,80],'w_lr':[1e-3,3e-4],'target_kl':[0.06,0.03,0.01],'pi_lr':[9e-4,6e-4,3e-4]}
+from random_search import random_search,set_one_thread
 
 args = argsparser()
 seeds = range(3)
 
-logger.configure('./data', ['csv'], log_suffix='Hopper-separate-weighted-ppo-tune')
+# Torch Shenanigans fix
+set_one_thread()
 
-for values in list(itertools.product( param['scale'], param['w_lr'],param['target_kl'],param['pi_lr'])):
-    returns = []
-    for seed in seeds:
-        args.seed = seed
+logger.configure(args.log_dir, ['csv'], log_suffix='Hopper-weighted-ppo-tune-'+str(args.seed))
 
-        checkpoint = 4000
-        result = separate_weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPSeparateWeightedActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma, target_kl=values[2],pi_lr=values[3],
-        seed=seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=3e-3,
-        scale=values[0],w_lr=values[1])
+returns = []
+for seed in seeds:
+    hyperparam = random_search(args.seed)
+    checkpoint = 4000
+    result = separate_weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPSeparateWeightedActorCritic,
+    ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=hyperparam['critic_hid']),epochs=args.epochs,
+    gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],
+    seed=seed,scale=hyperparam['scale'],w_lr=hyperparam['gamma_coef']*hyperparam['vf_lr'])
 
-        ret = np.array(result)
-        print(ret.shape)
-        returns.append(ret)
-        name = [str(k) for k in values]
-        name.append(str(seed))
-        print("hyperparam", '-'.join(name))
-        logger.logkv("hyperparam", '-'.join(name))
-        for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), ret[n])
-        logger.dumpkvs()
-
-    ret = np.array(returns)
+    ret = np.array(result)
     print(ret.shape)
-    ret = np.mean(ret, axis=0)
-    name = [str(k) for k in values]
-    name.append('mean')
+    returns.append(ret)
+    name = list(hyperparam.keys())
+    name = [str(key)+'-'+str(hyperparam[key]) for key in name]
+    name.append(str(seed))
+    print("hyperparam", '-'.join(name))
     logger.logkv("hyperparam", '-'.join(name))
     for n in range(ret.shape[0]):
         logger.logkv(str((n + 1) * checkpoint), ret[n])

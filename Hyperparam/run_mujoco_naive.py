@@ -20,15 +20,11 @@ logger.configure(args.log_dir, ['csv'], log_suffix='mujoco_ppo_naive_tuned='+str
 
 for values in list(itertools.product(param['env'])):
     args.env = values[0]
-    args.gamma = 0.995
-    args.hid = [64,64]
-    args.steps = 5500
-    args.pi_lr = 0.0005373214903241354
     result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
-                 ac_kwargs=dict(hidden_sizes=args.hid), pi_lr=args.pi_lr,
-                 gamma=args.gamma, target_kl=0.13490548606305505, vf_lr=0.0021184424558797726,
-                 seed=args.seed, steps_per_epoch=args.steps, epochs=364, naive=True)
-    checkpoint = 5500
+                ac_kwargs=dict(hidden_sizes=args.hid),gamma=0.995,
+                target_kl=0.278,vf_lr=0.0024,epochs=args.epochs,
+                seed=args.seed,naive=True)
+    checkpoint = 4000
 
     ret = np.array(result)
     print(ret.shape)

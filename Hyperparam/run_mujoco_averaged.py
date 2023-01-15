@@ -21,10 +21,9 @@ for values in list(itertools.product(param['env'])):
     args.env = values[0]
     checkpoint = 4000
     result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
-                          ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=[128,128]),
-                          gamma=args.gamma, target_kl=0.41150841591362675, vf_lr=0.000704457269534924,
-                          seed=args.seed, steps_per_epoch=4000, epochs=500,
-                          scale=50.4649909898754, gamma_coef=8.939315499216416)
+    ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=[256,256]),epochs=args.epochs,
+    gamma=0.995, target_kl=0.028,vf_lr=0.0013,
+    seed=args.seed,scale=116,gamma_coef=4.19)
 
     ret = np.array(result)
     print(ret.shape)
