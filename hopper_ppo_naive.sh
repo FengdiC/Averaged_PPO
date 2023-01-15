@@ -4,7 +4,7 @@
 #SBATCH --time=0-12:00
 #SBATCH --output=%N-%j-naive.out
 #SBATCH --account=def-ashique
-#SBATCH --array=1-10
+#SBATCH --array=0-2
 
 source $HOME/Documents/ENV/bin/activate
 module load python/3.10
