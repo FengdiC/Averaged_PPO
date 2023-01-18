@@ -13,7 +13,7 @@ import gym
 from random_search import random_search,set_one_thread
 
 args = argsparser()
-seeds = range(10)
+seeds = range(30)
 
 # Torch Shenanigans fix
 set_one_thread()
