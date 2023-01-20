@@ -22,7 +22,7 @@ for values in list(itertools.product(param['env'])):
     args.env = values[0]
     result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
                 ac_kwargs=dict(hidden_sizes=args.hid),gamma=0.995,
-                target_kl=0.06,vf_lr=0.0014,epochs=args.epochs,
+                target_kl=0.04,vf_lr=0.0024,epochs=args.epochs,
                 seed=args.seed,naive=True)
     checkpoint = 4000
 
