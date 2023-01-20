@@ -10,21 +10,25 @@ from Components import logger
 import itertools
 import numpy as np
 import gym
+from random_search import random_search,set_one_thread
 
 param = {'env':['Hopper-v4','Swimmer-v4','Ant-v4']}
 
 args = argsparser()
 seeds = range(10)
+# Torch Shenanigans fix
+set_one_thread()
 
 logger.configure(args.log_dir, ['csv'], log_suffix='mujoco_ppo_naive_tuned='+str(args.seed))
 
 for values in list(itertools.product(param['env'])):
     args.env = values[0]
-    result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
-                ac_kwargs=dict(hidden_sizes=args.hid),gamma=0.995,
-                target_kl=0.04,vf_lr=0.0024,epochs=args.epochs,
-                seed=args.seed,naive=True)
+    hyperparam = random_search(226)
     checkpoint = 4000
+    result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
+                 ac_kwargs=dict(hidden_sizes=args.hid), gamma=hyperparam['gamma'], pi_lr=hyperparam["pi_lr"],
+                 target_kl=hyperparam['target_kl'], vf_lr=hyperparam['vf_lr'], epochs=args.epochs,
+                 seed=args.seed, naive=True)
 
     ret = np.array(result)
     print(ret.shape)
