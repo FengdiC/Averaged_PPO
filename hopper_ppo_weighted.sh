@@ -4,16 +4,17 @@
 #SBATCH --time=0-72:00
 #SBATCH --output=%N-%j.out
 #SBATCH --account=def-ashique
+#SBATCH --array=1-500
 
 source $HOME/Documents/ENV/bin/activate
 module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
-python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/ --env 'Hopper-v4' --epochs 500 &
-python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/ --env 'Swimmer-v4' --epochs 500 &
-python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/ --env 'Ant-v4' --epochs 500 &
-#python Hyperparam/run_mujoco_averaged.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
+#python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/ --env 'Hopper-v4' --epochs 500 &
+#python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/ --env 'Swimmer-v4' --epochs 500 &
+#python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/ --env 'Ant-v4' --epochs 500 &
+python Hyperparam/run_mujoco_averaged.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ &
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
