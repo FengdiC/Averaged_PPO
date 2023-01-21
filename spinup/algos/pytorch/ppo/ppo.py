@@ -1,3 +1,4 @@
+from rl_suite.envs.dm_control_wrapper import ReacherWrapper
 import numpy as np
 import torch
 from torch.optim import Adam
@@ -298,6 +299,8 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     o, ep_ret, ep_len = env.reset(), 0, 0
     rets = []
     avgrets= []
+    all_rets = []
+    all_lens = []
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
@@ -332,6 +335,8 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
                     # only save EpRet / EpLen if trajectory finished
                     logger.store(EpRet=ep_ret, EpLen=ep_len)
                     rets.append(ep_ret)
+                    all_rets.append(ep_ret)
+                    all_lens.append(ep_len)
                 o, ep_ret, ep_len = env.reset(), 0, 0
 
 
@@ -360,7 +365,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         logger.log_tabular('StopIter', average_only=True)
         logger.log_tabular('Time', time.time()-start_time)
         logger.dump_tabular()
-    return avgrets
+    return all_rets, all_lens
 
 def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dict(), seed=0,
         steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
@@ -574,6 +579,8 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     o, ep_ret, ep_len = env.reset(), 0, 0
     rets= []
     avgrets = []
+    all_rets = []
+    all_lens = []
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
@@ -607,7 +614,9 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
                 if terminal:
                     # only save EpRet / EpLen if trajectory finished
                     logger.store(EpRet=ep_ret, EpLen=ep_len)
-                    rets.append(ep_ret)
+                    rets.append(ep_ret)                
+                    all_rets.append(ep_ret)
+                    all_lens.append(ep_len)
                 o, ep_ret, ep_len = env.reset(), 0, 0
 
         # Save model
@@ -635,7 +644,8 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         logger.log_tabular('StopIter', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
-    return avgrets
+    
+    return all_rets, all_lens
 
 def separate_weighted_ppo(env_fn, actor_critic=core.MLPSeparateWeightedActorCritic, ac_kwargs=dict(), seed=0,
         steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
@@ -931,12 +941,13 @@ def argsparser():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir', type=str, default='./')
-    parser.add_argument('--env', type=str, default='Hopper-v4')
+    parser.add_argument('--env', type=str, default='Hopper-v3')
     parser.add_argument('--hid', type=list, default=[64,32])
     parser.add_argument('--critic_hid', type=list, default=[128, 128])
     parser.add_argument('--l', type=int, default=2)
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--seed', '-s', type=int, default=0)
+    parser.add_argument('--hyp_seed', '-hs', type=int, required=True)
     parser.add_argument('--cpu', type=int, default=4)
     parser.add_argument('--steps', type=int, default=4000)
     parser.add_argument('--epochs', type=int, default=250)
@@ -944,29 +955,68 @@ def argsparser():
     parser.add_argument('--exp_name', type=str, default='ppo')
     parser.add_argument('--clip_ratio', type=float, default=0.2)
     parser.add_argument('--pi_lr', type=float, default=3e-4)
-
+    parser.add_argument('--algo', type=str, required=True)
     parser.add_argument('--scale', type=float, default=1.0)
     parser.add_argument('--gamma_coef',  type=float, default=1.0)
     parser.add_argument('--vf_lr', type=float, default=1e-3)
     args = parser.parse_args()
     return args
 
-if __name__ == '__main__':
+def save_returns(rets, ep_lens, fname):
+    data = np.zeros((2, len(rets)))
+    data[0] = np.array(ep_lens)
+    data[1] = np.array(rets)
+    np.savetxt(fname, data)
 
+
+
+if __name__ == '__main__':    
     args = argsparser()
 
-    mpi_fork(args.cpu)  # run parallel code with mpi
+    # mpi_fork(args.cpu)  # run parallel code with mpi
+
+    
+
+    rng = np.random.RandomState(seed=args.hyp_seed)
+
+    args.gamma_coef = rng.randint(low=10, high=1000)/100.0
+    args.scale = rng.randint(low=1, high=150)
+    args.target_kl = rng.randint(low=0.005*1000, high=0.5*1000)/1000.0
+    args.vf_lr = rng.randint(low=3, high=50)/10000.0
+    args.gamma = rng.choice([0.9,0.95,0.97,0.99,0.995])
+    hid = np.array([[64,64], [128,128], [256,256]])
+    args.hid = hid[rng.choice(range(hid.shape[0]))]    
+    args.critic_hid = hid[rng.choice(range(hid.shape[0]))]
+
 
     from spinup.utils.run_utils import setup_logger_kwargs
-    logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed)
 
-    ppo(lambda : gym.make(args.env), actor_critic=core.MLPActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,clip_ratio=args.clip_ratio,
-        pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
-        logger_kwargs=logger_kwargs,naive=args.naive)
-
-    weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
-        ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=args.critic_hid),
-        gamma=args.gamma,clip_ratio=args.clip_ratio,
-        pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
-        logger_kwargs=logger_kwargs, scale=args.scale,gamma_coef=args.gamma_coef)
+    for seed in range(5):
+        args.seed = seed
+        for mode in ["easy", "hard"]:
+            env = ReacherWrapper(mode=mode, seed=seed)        
+            if args.algo == "ppo":
+                exp_name = "ppo"
+                logger_kwargs = setup_logger_kwargs(exp_name, "{}_{}".format(args.hyp_seed, args.seed))
+                rets, lens = ppo(lambda : env, actor_critic=core.MLPActorCritic,
+                    ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,clip_ratio=args.clip_ratio,
+                    pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
+                    logger_kwargs=logger_kwargs,naive=False, target_kl=args.target_kl)
+                save_returns(rets, lens, "./results/dm_reacher_{}/{}_{}_{}.txt".format(mode, exp_name, args.hyp_seed, args.seed))
+            elif args.algo == "n_ppo":
+                exp_name = "ppo_naive"
+                logger_kwargs = setup_logger_kwargs(exp_name, "{}_{}".format(args.hyp_seed, args.seed))
+                rets, lens = ppo(lambda : env, actor_critic=core.MLPActorCritic,
+                    ac_kwargs=dict(hidden_sizes=args.hid), gamma=args.gamma,clip_ratio=args.clip_ratio,
+                    pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
+                    logger_kwargs=logger_kwargs,naive=True, target_kl=args.target_kl)
+                save_returns(rets, lens, "./results/dm_reacher_{}/{}_{}_{}.txt".format(mode, exp_name, args.hyp_seed, args.seed))
+            elif args.algo == "w_ppo":
+                exp_name = "weighted_ppo"
+                logger_kwargs = setup_logger_kwargs(exp_name, "{}_{}".format(args.hyp_seed, args.seed))
+                rets, lens = weighted_ppo(lambda: env, actor_critic=core.MLPWeightedActorCritic,
+                    ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=args.critic_hid),
+                    gamma=args.gamma,clip_ratio=args.clip_ratio,
+                    pi_lr=args.pi_lr,seed=args.seed, steps_per_epoch=args.steps, epochs=args.epochs,vf_lr=args.vf_lr,
+                    logger_kwargs=logger_kwargs, scale=args.scale,gamma_coef=args.gamma_coef, target_kl=args.target_kl)
+                save_returns(rets, lens, "./results/dm_reacher_{}/{}_{}_{}.txt".format(mode, exp_name, args.hyp_seed, args.seed))
