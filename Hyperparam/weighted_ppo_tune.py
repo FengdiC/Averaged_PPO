@@ -18,7 +18,7 @@ seeds = range(10)
 # Torch Shenanigans fix
 set_one_thread()
 
-logger.configure(args.log_dir, ['csv'], log_suffix='Ant-weighted-ppo-tune-'+str(args.seed))
+logger.configure(args.log_dir, ['csv'], log_suffix='Ant-weighted-ppo-tune-'+str(args.env))
 
 returns = []
 for seed in seeds:
