@@ -4,7 +4,7 @@
 #SBATCH --time=0-72:00
 #SBATCH --output=%N-%j.out
 #SBATCH --account=def-ashique
-#SBATCH --array=1-500
+#SBATCH --array=1-900
 
 source $HOME/Documents/ENV/bin/activate
 module load python/3.10
@@ -14,7 +14,7 @@ SECONDS=0
 #python Hyperparam/weighted_ppo_tune.py --seed 107 --log_dir $SCRATCH/avg_discount/logs --env 'Hopper-v4' --epochs 500 &
 #python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/logs --env 'Swimmer-v4' --epochs 500 &
 #python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/logs --env 'Reacher-v4' --epochs 500 &
-python Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/walker/ --env 'Walker2d-v4' --epochs 500&
+python Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/halfcheetah/ --env 'HalfCheetah-v4' --epochs 500&
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
