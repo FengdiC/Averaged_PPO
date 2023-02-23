@@ -10,10 +10,10 @@ def set_one_thread():
 def random_search(seed):
     rng = np.random.RandomState(seed=seed)
 
-    # choice 1
-    pi_lr = rng.choice([3,9,20,30,40,50])/10000.0
-    # # choice 2
-    # pi_lr = rng.choice([3, 9, 30]) / 10000.0
+    # # choice 1
+    # pi_lr = rng.choice([3,9,20,30,40,50])/10000.0
+    # choice 2
+    pi_lr = rng.choice([3, 9, 30]) / 10000.0
     gamma_coef = rng.randint(low=50, high=500)/100.0
     scale = rng.randint(low=1, high=120)
     target_kl = rng.randint(low=0.01*100, high=0.3*100)/100.0
