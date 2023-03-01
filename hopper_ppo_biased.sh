@@ -6,8 +6,8 @@
 #SBATCH --account=def-ashique
 #SBATCH --array=1-900
 
-module load python/3.10
 source $HOME/Documents/ENV/bin/activate
+module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
