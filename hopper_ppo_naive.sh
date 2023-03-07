@@ -14,6 +14,6 @@ SECONDS=0
 #python Hyperparam/naive_ppo_tune.py --seed 2 --log_dir $SCRATCH/avg_discount/ --env 'Hopper-v4' --epochs 500 &
 #python Hyperparam/naive_ppo_tune.py --seed 2 --log_dir $SCRATCH/avg_discount/ --env 'Swimmer-v4' --epochs 500 &
 #python Hyperparam/naive_ppo_tune.py --seed 2 --log_dir $SCRATCH/avg_discount/ --env 'Reacher-v4' --epochs 500 &
-python Hyperparam/naive_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/ant/ --env 'Ant-v4' --epochs 500 &
+python Hyperparam/naive_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/walker/ --env 'Walker2d-v4' --epochs 500 &
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
