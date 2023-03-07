@@ -813,9 +813,9 @@ def clipped_weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kw
     def update():
         data = buf.get()
 
-        pi_l_old, pi_info_old = compute_loss_pi(data)
+        pi_l_old, pi_info_old, emphasis = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
-        v_l_old = compute_loss_v(data).item()
+        v_l_old = compute_loss_v(data,emphasis).item()
 
         # Train policy with multiple steps of gradient descent
         for i in range(train_pi_iters):
