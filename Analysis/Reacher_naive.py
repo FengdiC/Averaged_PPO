@@ -10,9 +10,6 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 import gym
 from Components import logger
-import itertools
-import pandas as pd
-import seaborn as sns
 from reacher import DotReacherRepeat
 
 from torch.optim import Adam
