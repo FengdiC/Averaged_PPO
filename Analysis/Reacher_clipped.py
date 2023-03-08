@@ -148,10 +148,10 @@ class PPOBuffer:
                     adv=self.adv_buf, logp=self.logp_buf)
         return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in data.items()}
 
-def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dict(), seed=0,
-                 steps_per_epoch=800, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
-                 vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
-                 target_kl=0.01, logger_kwargs=dict(), save_freq=10, scale=1.0, gamma_coef=1.0):
+def clipped_weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dict(), seed=0,
+        steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
+        vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
+        target_kl=0.01, logger_kwargs=dict(), save_freq=10, scale=1.0,gamma_coef=1.0):
     """
     Proximal Policy Optimization (by clipping),
 
@@ -291,10 +291,11 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # Policy loss
         pi, logp = ac.pi(obs, act)
-        _, w = ac.v(obs)
+        _,w = ac.v(obs)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1 - clip_ratio, 1 + clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv) * (w / scale)).mean()
+        loss_pi = -(torch.min(ratio * adv, clip_adv) * (w/scale)).mean()
+        emphasis = torch.where(ratio*adv<=clip_adv,torch.ones(tim.size(dim=0)),torch.zeros(tim.size(dim=0)))
 
         # Useful extra info
         approx_kl = (logp_old - logp).mean().item()
@@ -303,13 +304,13 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         clipfrac = torch.as_tensor(clipped, dtype=torch.float32).mean().item()
         pi_info = dict(kl=approx_kl, ent=ent, cf=clipfrac)
 
-        return loss_pi, pi_info
+        return loss_pi, pi_info, emphasis
 
     # Set up function for computing value loss
-    def compute_loss_v(data):
+    def compute_loss_v(data,emphasis):
         obs, ret, tim = data['obs'], data['ret'], data['tim']
-        v, w = ac.v(obs)
-        loss = ((v - ret) ** 2).mean() + gamma_coef * ((w - gamma ** tim * scale) ** 2).mean()
+        v,w = ac.v(obs)
+        loss = ((v - ret) ** 2).mean() + gamma_coef * (emphasis*(w - gamma**tim * scale) ** 2).mean()
         return loss
 
     # Set up optimizers for policy and value function
@@ -322,14 +323,14 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     def update():
         data = buf.get()
 
-        pi_l_old, pi_info_old = compute_loss_pi(data)
+        pi_l_old, pi_info_old, emphasis = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
-        v_l_old = compute_loss_v(data).item()
+        v_l_old = compute_loss_v(data,emphasis).item()
 
         # Train policy with multiple steps of gradient descent
         for i in range(train_pi_iters):
             pi_optimizer.zero_grad()
-            loss_pi, pi_info = compute_loss_pi(data)
+            loss_pi, pi_info, emphasis = compute_loss_pi(data)
             kl = mpi_avg(pi_info['kl'])
             if kl > 1.5 * target_kl:
                 logger.log('Early stopping at step %d due to reaching max kl.' % i)
@@ -337,16 +338,13 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
             loss_pi.backward()
             mpi_avg_grads(ac.pi)  # average grads across MPI processes
             pi_optimizer.step()
-            # estimate the discounted state distribution
-
-            # compute the state traces
 
         logger.store(StopIter=i)
 
         # Value function learning
         for i in range(train_v_iters):
             vf_optimizer.zero_grad()
-            loss_v = compute_loss_v(data)
+            loss_v = compute_loss_v(data,emphasis)
             loss_v.backward()
             mpi_avg_grads(ac.v)  # average grads across MPI processes
             vf_optimizer.step()
@@ -361,13 +359,13 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     # Prepare for interaction with environment
     start_time = time.time()
     o, ep_ret, ep_len = env.reset(), 0, 0
-    rets = []
+    rets= []
     avgrets = []
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
-            a, v, w, logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
+            a, v, w,logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
 
             next_o, r, d, _ = env.step(a)
             ep_ret += r
@@ -389,7 +387,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
                     print('Warning: trajectory cut off by epoch at %d steps.' % ep_len, flush=True)
                 # if trajectory didn't reach terminal state, bootstrap value target
                 if timeout or epoch_ended:
-                    _, v, _, _ = ac.step(torch.as_tensor(o, dtype=torch.float32))
+                    _, v,_, _ = ac.step(torch.as_tensor(o, dtype=torch.float32))
                 else:
                     v = 0
                 buf.finish_path(v)
@@ -408,7 +406,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # Log info about epoch
         avgrets.append(np.mean(rets))
-        rets = []
+        rets=[]
         logger.log_tabular('Epoch', epoch)
         logger.log_tabular('EpRet', with_min_and_max=True)
         logger.log_tabular('EpLen', average_only=True)
@@ -433,24 +431,24 @@ def tune_Reacher():
     # Torch Shenanigans fix
     set_one_thread()
 
-    logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-' + str(args.seed))
+    logger.configure(args.log_dir, ['csv'], log_suffix='clipped-ppo-tune-' + str(args.seed))
 
     returns = []
     for seed in seeds:
         hyperparam = random_search(args.seed)
         checkpoint = 800
-        result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
-                              ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=hyperparam['critic_hid']),
-                              epochs=args.epochs,
-                              gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'], vf_lr=hyperparam['vf_lr'],
-                              pi_lr=hyperparam["pi_lr"],
-                              seed=seed, scale=hyperparam['scale'], gamma_coef=hyperparam['gamma_coef'])
+        result = clipped_weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
+                                      ac_kwargs=dict(hidden_sizes=args.hid,
+                                                     critic_hidden_sizes=hyperparam['critic_hid']), epochs=args.epochs,
+                                      gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],
+                                      vf_lr=hyperparam['vf_lr'], pi_lr=hyperparam["pi_lr"],
+                                      seed=seed, scale=hyperparam['scale'], gamma_coef=hyperparam['gamma_coef'])
 
         ret = np.array(result)
         print(ret.shape)
         returns.append(ret)
-        name = list(hyperparam.values())
-        name = [str(s) for s in name]
+        name = list(hyperparam.keys())
+        name = [str(key) + '-' + str(hyperparam[key]) for key in name]
         name.append(str(seed))
         print("hyperparam", '-'.join(name))
         logger.logkv("hyperparam", '-'.join(name))
