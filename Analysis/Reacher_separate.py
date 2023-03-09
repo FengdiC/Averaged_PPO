@@ -1,6 +1,4 @@
 import random
-
-import matplotlib.pyplot as plt
 import torch
 import numpy as np
 import os
@@ -147,47 +145,11 @@ class PPOBuffer:
                     adv=self.adv_buf, logp=self.logp_buf)
         return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in data.items()}
 
-def compute_correction(env,agent,gamma,policy=np.array([None,None])):
-    # get the policy
-    states = env.get_states()
-    if (policy==None).all():
-        policy = agent.pi.logits_net(torch.as_tensor(states, dtype=torch.float32))
-        policy=torch.nn.functional.softmax(policy).detach().numpy()
-    # policy = np.ones((25,8))/8.0
 
-    # get transition matrix P
-    P = env.transition_matrix(policy)
-    n = env.num_pt
-    # # check if the matrix is a transition matrix
-    # print(np.sum(P,axis=1))
-    power = 1
-    err = np.matmul(np.ones(n**2),np.linalg.matrix_power(P,power+1))-\
-          np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
-    err = np.sum(np.abs(err))
-    while err > 1.2 and power<10:
-        power+=1
-        err = np.matmul(np.ones(n**2), np.linalg.matrix_power(P,  power + 1)) - \
-              np.matmul(np.ones(n**2), np.linalg.matrix_power(P, power))
-        err = np.sum(np.abs(err))
-    # print(np.sum(np.linalg.matrix_power(P, 3),axis=1))
-    d_pi = np.matmul(np.ones(n**2)/float(n**2), np.linalg.matrix_power(P, power + 1))
-    # print("stationary distribution",d_pi,np.sum(d_pi))
-
-    if np.sum(d_pi - np.matmul(np.transpose(d_pi),P))>0.001:
-        print("not the stationary distribution")
-
-    # compute the special transition function M
-    M = np.matmul(np.diag(d_pi) , P)
-    M = np.matmul(M, np.diag(1/d_pi))
-
-    correction = np.matmul(np.linalg.inv(np.eye(n**2)-gamma* np.transpose(M)) , (1-gamma) * 1/(d_pi*n**2))
-    discounted = correction * d_pi
-    return correction,d_pi,discounted
-
-def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dict(), seed=0,
-                 steps_per_epoch=800, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
-                 vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
-                 target_kl=0.01, logger_kwargs=dict(), save_freq=10, scale=1.0, gamma_coef=1.0):
+def separate_weighted_ppo(env_fn, actor_critic=core.MLPSeparateWeightedActorCritic, ac_kwargs=dict(), seed=0,
+        steps_per_epoch=800, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
+        vf_lr=1e-3,w_lr=1e-3, train_pi_iters=80, train_v_iters=80,train_w_iters=80, lam=0.97, max_ep_len=1000,
+        target_kl=0.01, logger_kwargs=dict(), save_freq=10, scale=1.0):
     """
     Proximal Policy Optimization (by clipping),
 
@@ -327,11 +289,10 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # Policy loss
         pi, logp = ac.pi(obs, act)
-        _, w = ac.v(obs)
+        w = ac.w(obs)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1 - clip_ratio, 1 + clip_ratio) * adv
-        loss_pi = -(torch.min(ratio * adv, clip_adv) * (w / scale)).mean()
-        emphasis = torch.where(ratio * adv<= clip_adv,torch.zeros(tim.size(dim=0)),torch.ones(tim.size(dim=0)))
+        loss_pi = -(torch.min(ratio * adv, clip_adv)* (w/scale)).mean()
 
         # Useful extra info
         approx_kl = (logp_old - logp).mean().item()
@@ -340,35 +301,48 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         clipfrac = torch.as_tensor(clipped, dtype=torch.float32).mean().item()
         pi_info = dict(kl=approx_kl, ent=ent, cf=clipfrac)
 
-        return loss_pi, pi_info, emphasis
+        return loss_pi, pi_info
 
     # Set up function for computing value loss
     def compute_loss_v(data):
         obs, ret, tim = data['obs'], data['ret'], data['tim']
-        v, w = ac.v(obs)
-        loss = ((v - ret) ** 2).mean() + gamma_coef * ((w - gamma ** tim * scale) ** 2).mean()
+        v = ac.v(obs)
+        loss = ((v - ret) ** 2).mean()
+        return loss
+
+    def compute_loss_w(data):
+        obs, ret, tim = data['obs'], data['ret'], data['tim']
+        w = ac.w(obs)
+        loss = ((w - gamma**tim * scale) ** 2).mean()
         return loss
 
     # Set up optimizers for policy and value function
     pi_optimizer = Adam(ac.pi.parameters(), lr=pi_lr)
     vf_optimizer = Adam(ac.v.parameters(), lr=vf_lr)
+    w_optimizer = Adam(ac.w.parameters(), lr=w_lr)
 
     # Set up model saving
     logger.setup_pytorch_saver(ac)
 
     def update():
         data = buf.get()
-        # compute the discounted distribution of the old policy
-        correction, d_pi, discounted = compute_correction(env, ac, gamma)
 
-        pi_l_old, pi_info_old, clipped = compute_loss_pi(data)
+        pi_l_old, pi_info_old = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
         v_l_old = compute_loss_v(data).item()
+
+        # Correction Network learning
+        for i in range(train_w_iters):
+            w_optimizer.zero_grad()
+            loss_w = compute_loss_w(data)
+            loss_w.backward()
+            mpi_avg_grads(ac.w)  # average grads across MPI processes
+            w_optimizer.step()
 
         # Train policy with multiple steps of gradient descent
         for i in range(train_pi_iters):
             pi_optimizer.zero_grad()
-            loss_pi, pi_info, clipped = compute_loss_pi(data)
+            loss_pi, pi_info = compute_loss_pi(data)
             kl = mpi_avg(pi_info['kl'])
             if kl > 1.5 * target_kl:
                 logger.log('Early stopping at step %d due to reaching max kl.' % i)
@@ -394,64 +368,16 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
                      DeltaLossPi=(loss_pi.item() - pi_l_old),
                      DeltaLossV=(loss_v.item() - v_l_old))
 
-        # # compute the discounted distribution of the learnt policy
-        # correction, d_pi, discounted = compute_correction(env, ac, gamma)
-        # get the learnt weight
-        states = env.get_states()
-        _, est = ac.v(torch.as_tensor(states,dtype=torch.float32))
-        est = est.detach().numpy()
-
-        states = states.tolist()
-        states = [[round(key, 2) for key in item] for item in states]
-
-        def compute_err_ratio(sampling,est,indices,count):
-            err_in_buffer = np.matmul(np.transpose(sampling), np.abs(correction - est))
-            approx_bias = np.sum(
-                np.abs(discounted[indices] * count[indices] - est[indices] * sampling[indices] * count[indices]))
-            miss_bias = np.sum(np.abs(discounted[indices] * count[indices] - sampling[indices] * count[indices]))
-            ratio = approx_bias/miss_bias
-            return err_in_buffer, ratio
-
-        count = np.zeros(len(states))
-        for i in range(data['obs'].size(dim=0)):
-            s = data['obs'][i].numpy().tolist()
-            s = [round(key, 2) for key in s]
-            idx = states.index(s)
-            count[idx] += 1
-        sampling = count / data['obs'].size(dim=0)
-        indices = np.argwhere(count)
-
-        # compare the error between learnt weight/ sampling and discounted distribution
-        _, ratio = compute_err_ratio(sampling,est,indices,count)
-        # add in the effect of clipping
-        count = np.zeros(len(states))
-        clipped = clipped.numpy()
-        for i in range(data['obs'].size(dim=0)):
-            if clipped[i] ==1:
-                continue
-            s = data['obs'][i].numpy().tolist()
-            s = [round(key, 2) for key in s]
-            idx = states.index(s)
-            count[idx] += 1
-        sampling = count / data['obs'].size(dim=0)
-        indices = np.argwhere(count)
-        _, clipped_ratio = compute_err_ratio(sampling, est, indices, count)
-        # plot all correction changes as the policy improves
-
-        return ratio,clipped_ratio
-
     # Prepare for interaction with environment
     start_time = time.time()
     o, ep_ret, ep_len = env.reset(), 0, 0
-    rets = []
+    rets= []
     avgrets = []
-    ratios = []
-    clipped_ratios = []
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
-            a, v, w, logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
+            a, v, w,logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
 
             next_o, r, d, _ = env.step(a)
             ep_ret += r
@@ -473,7 +399,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
                     print('Warning: trajectory cut off by epoch at %d steps.' % ep_len, flush=True)
                 # if trajectory didn't reach terminal state, bootstrap value target
                 if timeout or epoch_ended:
-                    _, v, _, _ = ac.step(torch.as_tensor(o, dtype=torch.float32))
+                    _, v,_, _ = ac.step(torch.as_tensor(o, dtype=torch.float32))
                 else:
                     v = 0
                 buf.finish_path(v)
@@ -488,13 +414,11 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
             logger.save_state({'env': env}, None)
 
         # Perform PPO update!
-        ratio, clipped_ratio = update()
-        ratios.append(ratio)
-        clipped_ratios.append(clipped_ratio)
+        update()
 
         # Log info about epoch
         avgrets.append(np.mean(rets))
-        rets = []
+        rets=[]
         logger.log_tabular('Epoch', epoch)
         logger.log_tabular('EpRet', with_min_and_max=True)
         logger.log_tabular('EpLen', average_only=True)
@@ -510,7 +434,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         logger.log_tabular('StopIter', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
-    return avgrets,ratios, clipped_ratios
+    return avgrets
 
 def tune_Reacher():
     args = argsparser()
@@ -519,45 +443,30 @@ def tune_Reacher():
     # Torch Shenanigans fix
     set_one_thread()
 
-    logger.configure(args.log_dir, ['csv'], log_suffix='err-weighted-ppo-tune-' + str(args.seed))
+    logger.configure(args.log_dir, ['csv'], log_suffix='separate-ppo-tune-' + str(args.seed))
 
     returns = []
-    err_ratios = []
-    err_clipped_ratios = []
     for seed in seeds:
-        hyperparam = random_search(98)
+        hyperparam = random_search(args.seed)
         checkpoint = 800
-        result,ratios,clipped_ratios = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
-                              ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=hyperparam['critic_hid']),
-                              epochs=args.epochs,
-                              gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'], vf_lr=hyperparam['vf_lr'],
-                              pi_lr=hyperparam["pi_lr"],
-                              seed=seed, scale=hyperparam['scale'], gamma_coef=hyperparam['gamma_coef'])
+        result = separate_weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPSeparateWeightedActorCritic,
+                                       ac_kwargs=dict(hidden_sizes=args.hid,
+                                                      critic_hidden_sizes=hyperparam['critic_hid']), epochs=args.epochs,
+                                       gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'],
+                                       vf_lr=hyperparam['vf_lr'],
+                                       seed=seed, scale=hyperparam['scale'],
+                                       w_lr=hyperparam['gamma_coef'] * hyperparam['vf_lr'])
 
         ret = np.array(result)
         print(ret.shape)
         returns.append(ret)
-        err_ratios.append(ratios)
-        err_clipped_ratios.append(clipped_ratios)
         name = list(hyperparam.values())
         name = [str(s) for s in name]
         name.append(str(seed))
         print("hyperparam", '-'.join(name))
-        logger.logkv("name", 'ratio-'+str(seed))
+        logger.logkv("hyperparam", '-'.join(name))
         for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), ratios[n])
+            logger.logkv(str((n + 1) * checkpoint), ret[n])
         logger.dumpkvs()
-        logger.logkv("name", 'clipped-ratio-' + str(seed))
-        for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), clipped_ratios[n])
-        logger.dumpkvs()
-    err_ratios = np.array(err_ratios)
-    err_clipped_ratios = np.array(err_clipped_ratios)
-    print(err_ratios.shape,":::",np.mean(err_ratios,axis=0).shape,":::",len(range(0,ret.shape[0]*checkpoint,checkpoint)))
-    plt.plot(range(0,ret.shape[0]*checkpoint,checkpoint),np.mean(err_ratios,axis=0),label='ratio')
-    plt.plot(range(0, ret.shape[0]*checkpoint, checkpoint), np.mean(err_clipped_ratios, axis=0), label='clipped ratio')
-    plt.legend()
-    plt.show()
-
 
 tune_Reacher()
