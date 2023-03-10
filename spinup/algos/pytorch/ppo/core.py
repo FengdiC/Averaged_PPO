@@ -192,7 +192,7 @@ class MLPWeightedActorCritic(nn.Module):
 
 class MLPSeparateWeightedActorCritic(nn.Module):
     def __init__(self, observation_space, action_space,
-                 hidden_sizes=(64,64), activation=nn.Tanh):
+                 hidden_sizes=(64,64),critic_hidden_sizes=(64,64), activation=nn.Tanh):
         super().__init__()
 
         obs_dim = observation_space.shape[0]
@@ -205,7 +205,7 @@ class MLPSeparateWeightedActorCritic(nn.Module):
 
         # build value function
         self.v  = MLPCritic(obs_dim, hidden_sizes, activation)
-        self.w = MLPGamma(obs_dim, hidden_sizes, activation)
+        self.w = MLPGamma(obs_dim, critic_hidden_sizes, activation)
 
     def step(self, obs):
         with torch.no_grad():
