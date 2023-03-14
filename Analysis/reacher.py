@@ -144,12 +144,14 @@ class DotReacherRepeat(Env):
 
     def reset(self):
         self.steps = 0
-        self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
+        # self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
+        self.pos = self._obs[0]
         obs = self.pos
         return obs
 
     def _restart(self):
-        self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
+        self.pos = self._obs[0]
+        # self.pos = self._obs[np.random.randint(0, self.num_pt ** 2)]
         obs = self.pos
         return obs
 
@@ -167,7 +169,7 @@ class DotReacherRepeat(Env):
         # Reach goal
         done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
         if done:
-            reward = 0
+            reward = 1
 
         # Check termiation
         done = self.steps == self._timeout
