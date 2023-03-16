@@ -157,7 +157,7 @@ class DotReacherRepeat(Env):
 
     def step(self,action):
         self.steps += 1
-        done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
+        done = np.allclose(self.pos, np.array([0.8,0.8]), atol=self._pos_tol)
         if done:
             next_obs = self._restart()
             reward = -0.01
@@ -167,7 +167,7 @@ class DotReacherRepeat(Env):
             # Reward
             reward = -0.01
         # Reach goal
-        done = np.allclose(self.pos, np.array([0.8,-0.8]), atol=self._pos_tol)
+        done = np.allclose(self.pos, np.array([0.8,0.8]), atol=self._pos_tol)
         if done:
             reward = 1
 
