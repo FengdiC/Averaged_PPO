@@ -327,7 +327,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         states = states.tolist()
         states = [[round(key, 2) for key in item] for item in states]
         count = np.zeros(len(states))
-        weighting = np.zeros(800)
+        weighting = np.zeros(data['obs'].size(dim=0))
         numerator = [[] for s in range(len(states))]
         tim = data['tim']
         for i in range(data['obs'].size(dim=0)):
@@ -340,7 +340,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         numerator = np.array(numerator)
         c_D = data['obs'].size(dim=0) * (1 - gamma) * numerator / (count + 0.001)
 
-        for i in range(800):
+        for i in range(data['obs'].size(dim=0)):
             s = data['obs'][i].numpy().tolist()
             s = [round(key, 2) for key in s]
             idx = states.index(s)
@@ -349,8 +349,8 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
-        obs, act, tim, adv, logp_old = data['obs'][:800], data['act'][:800], data['tim'][:800], \
-                                       data['adv'][:800], data['logp'][:800]
+        obs, act, tim, adv, logp_old = data['obs'], data['act'], data['tim'], \
+                                       data['adv'], data['logp']
 
         # Policy loss
         pi, logp = ac.pi(obs, act)
@@ -373,7 +373,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
     # Set up function for computing value loss
     def compute_loss_v(data):
-        obs, ret, tim = data['obs'][:800], data['ret'][:800], data['tim'][:800]
+        obs, ret, tim = data['obs'], data['ret'], data['tim']
         v, w = ac.v(obs)
         loss = ((v - ret) ** 2).mean() + gamma_coef * ((w - gamma ** tim * scale) ** 2).mean()
         return loss
@@ -388,18 +388,18 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     def update():
         data = buf.get()
         # compute the discounted distribution of the old policy
-        correction, d_pi, discounted = compute_correction(env, ac, gamma)
+        # correction, d_pi, discounted = compute_correction(env, ac, gamma)
 
         pi_l_old, pi_info_old, clipped = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
         v_l_old = compute_loss_v(data).item()
 
-        # Train policy with multiple steps of gradient descent
-        corrections = []
-        d_pis = []
-        discounteds = []
-        clips=[]
-        clips.append(np.ones(data['tim'].size(dim=0)))
+        # # Train policy with multiple steps of gradient descent
+        # corrections = []
+        # d_pis = []
+        # discounteds = []
+        # clips=[]
+        # clips.append(np.ones(data['tim'].size(dim=0)))
         for i in range(train_pi_iters):
             # # compute the discounted distribution of the old policy
             # correction, d_pi, discounted = compute_correction(env, ac, gamma)
@@ -514,7 +514,7 @@ def tune_Reacher():
     returns = []
     for seed in seeds:
         hyperparam = random_search(args.seed)
-        checkpoint = 800
+        checkpoint = 4000
         result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
                               ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=hyperparam['critic_hid']),
                               epochs=args.epochs,
