@@ -12,7 +12,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 import gym
 from Components import logger
-from reacher import DotReacherRepeat
+from reacher import DotReacherRepeat,DotReacher
 from counterexample import TwoState
 
 from torch.optim import Adam
@@ -187,7 +187,7 @@ def compute_correction(env,agent,gamma,policy=np.array([None,None])):
 
 def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dict(), seed=0,
                  steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
-                 vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=500,
+                 vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
                  target_kl=0.01, logger_kwargs=dict(), save_freq=10, scale=1.0, gamma_coef=1.0):
     """
     Proximal Policy Optimization (by clipping),
@@ -304,7 +304,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     np.random.seed(seed)
 
     # Instantiate environment
-    env = DotReacherRepeat(stepsize=0.05)
+    env = DotReacher()
     obs_dim = env.observation_space.shape
     act_dim = env.action_space.shape
 

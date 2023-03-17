@@ -9,7 +9,7 @@ class DotReacher(Env):
     Action space, Discrete(8)
     Observation space, Box(2), positions
     """
-    def __init__(self,stepsize=0.4,timeout=100):
+    def __init__(self,stepsize=0.02,timeout=1000):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._aval = stepsize * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]
@@ -31,7 +31,7 @@ class DotReacher(Env):
 
     def reset(self):
         self.steps = 0
-        self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
+        self.pos = self._obs[0]
         obs = self.pos
         return obs
 
@@ -42,7 +42,9 @@ class DotReacher(Env):
         # Reward
         reward = -0.01
         # Done
-        done = np.allclose(self.pos, np.zeros(2), atol=self._pos_tol)
+        done = np.allclose(self.pos, np.array([0.8,0.96]), atol=self._pos_tol)
+        if done:
+            reward = 0
         done = done or self.steps == self._timeout
         # Metadata
         info = {}
@@ -122,7 +124,7 @@ class DotReacherRepeat(Env):
     Action space, Discrete(8)
     Observation space, Box(2), positions
     """
-    def __init__(self,stepsize=0.4,timeout=500):
+    def __init__(self,stepsize=0.4,timeout=1000):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._aval = stepsize * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]
