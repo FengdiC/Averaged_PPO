@@ -265,7 +265,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     np.random.seed(seed)
 
     # Instantiate environment
-    env = DotReacher()
+    env = DotReacherRepeat(stepsize=0.05)
     obs_dim = env.observation_space.shape
     act_dim = env.action_space.shape
 

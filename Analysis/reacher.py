@@ -124,7 +124,7 @@ class DotReacherRepeat(Env):
     Action space, Discrete(8)
     Observation space, Box(2), positions
     """
-    def __init__(self,stepsize=0.4,timeout=1000):
+    def __init__(self,stepsize=0.05,timeout=1000):
         # actions: up down left right
         # actions: upleft upright downleft downright
         self._aval = stepsize * np.array([[0,1], [0,-1], [-1, 0], [1,0], [-1,1], [1,1], [-1, -1], [1,-1]
@@ -144,6 +144,8 @@ class DotReacherRepeat(Env):
         self._timeout = timeout
         self.steps = 0
 
+        self.absorb_states = [[-0.95,-0.9],[-0.95,-0.85],[-0.9,-0.85],[-0.85,-0.9],[-0.9,-0.95],[-0.85,-0.95]]
+
     def reset(self):
         self.steps = 0
         # self.pos = self._obs[np.random.randint(0,self.num_pt**2)]
@@ -160,18 +162,25 @@ class DotReacherRepeat(Env):
     def step(self,action):
         self.steps += 1
         done = np.allclose(self.pos, np.array([0.8,0.95]), atol=self._pos_tol)
-        if done:
+        absorbing = False
+        for i in range(len(self.absorb_states)):
+            absorbing = absorbing or np.allclose(self.pos, np.array(self.absorb_states[i]), atol=self._pos_tol)
+        absorbing = absorbing and np.random.rand(1)<0.999
+        if absorbing:
+            next_obs = self.pos
+            reward = -np.sum(np.abs(np.array([0.8,0.95])-next_obs))/400.0
+        elif done:
             next_obs = self._restart()
-            reward = -0.01
+            reward = -np.sum(np.abs(np.array([0.8,0.95])-next_obs))/400.0
         else:
             self.pos = np.clip(self.pos + self._aval[int(action-1)] ,self._LB, self._UB)
             next_obs = self.pos
             # Reward
-            reward = -0.01
+            reward = -np.sum(np.abs(np.array([0.8,0.95])-next_obs))/400.0
         # Reach goal
         done = np.allclose(self.pos, np.array([0.8,0.95]), atol=self._pos_tol)
         if done:
-            reward = 0
+            reward = 10
 
         # Check termiation
         done = self.steps == self._timeout
