@@ -14,7 +14,7 @@ SECONDS=0
 #python Hyperparam/weighted_ppo_tune.py --seed 107 --log_dir $SCRATCH/avg_discount/logs --env 'Hopper-v4' --epochs 500 &
 #python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/logs --env 'Swimmer-v4' --epochs 500 &
 #python Hyperparam/weighted_ppo_tune.py --seed 189 --log_dir $SCRATCH/avg_discount/logs --env 'Reacher-v4' --epochs 500 &
-python Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/mountain/ --env 'MountainCarContinuous-v0' --epochs 250&
+python Hyperparam/weighted_ppo_tune.py --seed $SLURM_ARRAY_TASK_ID --log_dir $SCRATCH/avg_discount/pendulum/ --env 'Pendulum-v1' --epochs 250&
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
