@@ -165,7 +165,7 @@ class DotReacherRepeat(Env):
         absorbing = False
         for i in range(len(self.absorb_states)):
             absorbing = absorbing or np.allclose(self.pos, np.array(self.absorb_states[i]), atol=self._pos_tol)
-        absorbing = absorbing and np.random.rand(1)<0.999
+        # absorbing = absorbing and np.random.rand(1)<0.999
         if absorbing:
             next_obs = self.pos
             reward = -np.sum(np.abs(np.array([0.8,0.95])-next_obs))/400.0
