@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=3  # Cores proportional to GPUs: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=2400M       # Memory proportional to GPUs: 32000 Cedar, 64000 Graham.
-#SBATCH --time=0-72:00
+#SBATCH --time=0-672:00
 #SBATCH --output=%N-%j-naive.out
 #SBATCH --account=def-ashique
 
