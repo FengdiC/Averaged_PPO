@@ -18,11 +18,12 @@ seeds = range(10)
 # Torch Shenanigans fix
 set_one_thread()
 
-logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-'+str(args.seed))
+logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-'+str(args.env))
 
 returns = []
 for seed in seeds:
     hyperparam = random_search(args.seed)
+    hyperparam['gamma'] = args.gamma
     checkpoint = 4000
     result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
     ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=hyperparam['critic_hid']),epochs=args.epochs,
