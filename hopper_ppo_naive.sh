@@ -3,7 +3,7 @@
 #SBATCH --mem=1200M       # Memory proportional to GPUs: 32000 Cedar, 64000 Graham.
 #SBATCH --time=0-72:00
 #SBATCH --output=%N-%j-naive.out
-#SBATCH --account=rrg-ashique
+#SBATCH --account=def-ashique
 
 module load python/3.10
 source $HOME/Documents/ENV/bin/activate
