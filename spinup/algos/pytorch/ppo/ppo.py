@@ -305,7 +305,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
             a, v, logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
 
             next_o, r, d, _ = env.step(a)
-            ep_ret += r
+            ep_ret += r* gamma**ep_len
             ep_len += 1
 
             # save and log
@@ -581,7 +581,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
             a, v, w,logp = ac.step(torch.as_tensor(o, dtype=torch.float32))
 
             next_o, r, d, _ = env.step(a)
-            ep_ret += r
+            ep_ret += r* gamma**ep_len
             ep_len += 1
 
             # save and log
