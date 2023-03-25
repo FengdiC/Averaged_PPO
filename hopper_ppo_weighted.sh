@@ -10,10 +10,12 @@ module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
-python Hyperparam/weighted_ppo_tune.py --seed 556 --log_dir $SCRATCH/avg_discount/logs99 --env 'HalfCheetah-v4' --epochs 500  --gamma 0.99&
-python Hyperparam/weighted_ppo_tune.py --seed 790 --log_dir $SCRATCH/avg_discount/logs99 --env 'Ant-v4' --epochs 500 --gamma 0.99&
-python Hyperparam/weighted_ppo_tune.py --seed 243 --log_dir $SCRATCH/avg_discount/logs99/ --env 'MountainCarContinuous-v0' --epochs 250 --gamma 0.99&
-python Hyperparam/weighted_ppo_tune.py --seed 241 --log_dir $SCRATCH/avg_discount/logs99/ --env 'Pendulum-v1' --epochs 250 --gamma 0.99&
+python Hyperparam/weighted_ppo_tune.py --seed 394 --log_dir $SCRATCH/avg_discount/discount_swimmer --env 'Swimmer-v4' --epochs 500  --gamma 0.99&
+python Hyperparam/weighted_ppo_tune.py --seed 394 --log_dir $SCRATCH/avg_discount/discount_swimmer --env 'Swimmer-v4' --epochs 500  --gamma 0.993&
+python Hyperparam/weighted_ppo_tune.py --seed 394 --log_dir $SCRATCH/avg_discount/discount_swimmer --env 'Swimmer-v4' --epochs 500  --gamma 0.995&
+#python Hyperparam/weighted_ppo_tune.py --seed 790 --log_dir $SCRATCH/avg_discount/logs99 --env 'Ant-v4' --epochs 500 --gamma 0.99&
+#python Hyperparam/weighted_ppo_tune.py --seed 243 --log_dir $SCRATCH/avg_discount/logs99/ --env 'MountainCarContinuous-v0' --epochs 250 --gamma 0.99&
+#python Hyperparam/weighted_ppo_tune.py --seed 241 --log_dir $SCRATCH/avg_discount/logs99/ --env 'Pendulum-v1' --epochs 250 --gamma 0.99&
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
