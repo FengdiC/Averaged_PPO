@@ -10,10 +10,10 @@ source $HOME/Documents/ENV/bin/activate
 module load mujoco mpi4py
 
 SECONDS=0
-python Hyperparam/weighted_ppo_tune.py --seed 556 --log_dir $SCRATCH/avg_discount/logs --env 'HalfCheetah-v4' --epochs 500  --gamma 0.97&
-python Hyperparam/weighted_ppo_tune.py --seed 790 --log_dir $SCRATCH/avg_discount/logs --env 'Ant-v4' --epochs 500 --gamma 0.97&
-python Hyperparam/weighted_ppo_tune.py --seed 243 --log_dir $SCRATCH/avg_discount/logs/ --env 'MountainCarContinuous-v0' --epochs 250 --gamma 0.97&
-python Hyperparam/weighted_ppo_tune.py --seed 241 --log_dir $SCRATCH/avg_discount/logs/ --env 'Pendulum-v1' --epochs 250 --gamma 0.97&
+python Hyperparam/weighted_ppo_tune.py --seed 556 --log_dir $SCRATCH/avg_discount/logs --env 'HalfCheetah-v4' --epochs 500  --gamma 0.993&
+python Hyperparam/weighted_ppo_tune.py --seed 790 --log_dir $SCRATCH/avg_discount/logs --env 'Ant-v4' --epochs 500 --gamma 0.993&
+python Hyperparam/weighted_ppo_tune.py --seed 243 --log_dir $SCRATCH/avg_discount/logs/ --env 'MountainCarContinuous-v0' --epochs 250 --gamma 0.993&
+python Hyperparam/weighted_ppo_tune.py --seed 241 --log_dir $SCRATCH/avg_discount/logs/ --env 'Pendulum-v1' --epochs 250 --gamma 0.993&
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
