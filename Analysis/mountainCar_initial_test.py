@@ -651,7 +651,7 @@ def tune_Reacher():
     # Torch Shenanigans fix
     set_one_thread()
 
-    logger.configure(args.log_dir, ['csv'], log_suffix='MountainCarContinuous-error' + str(args.seed))
+    logger.configure(args.log_dir, ['csv'], log_suffix='dist-error-' + str(args.env)+'-' + str(args.seed))
 
     returns = []
     for seed in seeds:
