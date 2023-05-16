@@ -172,6 +172,7 @@ def est_initial(env,bins):
         o = env.reset()
         idx = (o-low)/state_steps
         # idx = idx.astype(int)
+        print(idx)
         counts[idx] += 1
     counts /= 10*bins**n
     counts = counts.flatten()
