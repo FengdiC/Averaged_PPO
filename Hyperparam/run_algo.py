@@ -3,7 +3,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 granddir = os.path.dirname(parentdir)
 sys.path.insert(0, parentdir)
-from spinup.algos.pytorch.ppo.ppo import argsparser,weighted_ppo,ppo, separate_weighted_ppo
+from spinup.algos.pytorch.ppo.ppo import argsparser,weighted_ppo,ppo
 from spinup.algos.pytorch.ppo import core
 sys.path.insert(0,granddir)
 from Components import logger
