@@ -171,7 +171,7 @@ def est_initial(env,bins):
     for k in range(10*bins**n):
         o = env.reset()
         idx = (o-low)/state_steps
-        idx = idx.astype(int)
+        # idx = idx.astype(int)
         counts[idx] += 1
     counts /= 10*bins**n
     counts = counts.flatten()
@@ -280,7 +280,7 @@ def compute_c_D(env,data,gamma,bins,num_traj):
     for i in range(data['obs'].size(dim=0)):
         s = data['obs'][i].numpy()
         idx = (s - low) / state_steps
-        idx = idx.astype(int)
+        # idx = idx.astype(int)
         counts[idx] += 1
         numerator[idx] += gamma ** tim[i].item()
     numerator /= num_traj
@@ -303,7 +303,7 @@ def est_sampling(env,data,bins):
     for i in range(data['obs'].size(dim=0)):
         s = data['obs'][i].numpy()
         idx = (s - low) / state_steps
-        idx = idx.astype(int)
+        # idx = idx.astype(int)
         counts[idx] += 1
 
     counts = counts.flatten()
