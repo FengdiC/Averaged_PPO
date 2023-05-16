@@ -170,12 +170,12 @@ def est_initial(env,bins):
     state_steps = (high - low) / bins
 
     counts = np.zeros((bins, )*n)
-    for k in range(3*bins**n):
+    for k in range(5000):
         o = env.reset()
         idx = (o-low)/state_steps
         idx = idx.astype(int)
         counts[idx] += 1
-    counts /= 3*bins**n
+    counts /= 5000
     counts = counts.flatten()
     return counts
 
