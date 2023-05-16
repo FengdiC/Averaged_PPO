@@ -461,6 +461,10 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
     buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam)
 
+    bins = 4
+    n = env.observation_space.shape[0]
+    initial = est_initial(env, bins)
+
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
         obs, act, tim, adv, logp_old = data['obs'], data['act'], data['tim'], \
@@ -503,16 +507,11 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # # compute errors
         # bins,_ = get_states(env)
-        #
-        # initial = est_initial(env, bins)
         # correction, d_pi, discounted= compute_correction(env, ac, gamma,initial)
         # est, sampling, indices, counts = compute_c_D(env, data, gamma, bins, num_traj)
         # ratio,_, diff_dist = bias_compare(discounted, sampling, indices, counts, initial,d_pi, correction, est)
 
         # only compute distribution difference between the initial and the sampling
-        bins=4
-        n = env.observation_space.shape[0]
-        initial = est_initial(env, bins)
         sampling = est_sampling(env,data,bins)
         ratio = 0
         diff_dist = np.sum(np.abs(initial-sampling))/(bins**n)
