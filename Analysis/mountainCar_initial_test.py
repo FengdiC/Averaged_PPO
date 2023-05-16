@@ -293,6 +293,23 @@ def compute_c_D(env,data,gamma,bins,num_traj):
     indices = np.argwhere(counts)
     return est, sampling, indices,counts
 
+def est_sampling(env,data,bins):
+    n = env.observation_space.shape[0]
+    low = env.observation_space.low
+    high = env.observation_space.high
+    state_steps = (high - low) / bins
+
+    counts = np.zeros((bins, )*n)
+    for i in range(data['obs'].size(dim=0)):
+        s = data['obs'][i].numpy()
+        idx = (s - low) / state_steps
+        idx = idx.astype(int)
+        counts[idx] += 1
+
+    counts = counts.flatten()
+    sampling = counts / data['obs'].size(dim=0)
+    return sampling
+
 def bias_compare(discounted,sampling,indices,counts, initial,d_pi,correction,est):
     ## this method counts the number of times of each state shown in one buffer.
     err_in_buffer = np.matmul(np.transpose(sampling), np.abs(correction - est))
@@ -479,13 +496,21 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     def update(num_traj):
         data = buf.get()
 
-        # compute errors
-        bins,_ = get_states(env)
+        # # compute errors
+        # bins,_ = get_states(env)
+        #
+        # initial = est_initial(env, bins)
+        # correction, d_pi, discounted= compute_correction(env, ac, gamma,initial)
+        # est, sampling, indices, counts = compute_c_D(env, data, gamma, bins, num_traj)
+        # ratio,_, diff_dist = bias_compare(discounted, sampling, indices, counts, initial,d_pi, correction, est)
 
+        # only compute distribution difference between the initial and the sampling
+        bins=12
+        n = env.observation_space.shape[0]
         initial = est_initial(env, bins)
-        correction, d_pi, discounted= compute_correction(env, ac, gamma,initial)
-        est, sampling, indices, counts = compute_c_D(env, data, gamma, bins, num_traj)
-        ratio,_, diff_dist = bias_compare(discounted, sampling, indices, counts, initial,d_pi, correction, est)
+        sampling = est_sampling(env,data,bins)
+        ratio = 0
+        diff_dist = np.sum(np.abs(initial-sampling))/(bins**n)
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
@@ -725,5 +750,5 @@ def plot_result():
     plt.tight_layout()
     plt.show()
 
-# tune_Reacher()
-plot_result()
+tune_Reacher()
+# plot_result()
