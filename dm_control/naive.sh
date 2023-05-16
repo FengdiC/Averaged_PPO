@@ -9,7 +9,6 @@
 module load python/3.10
 source $HOME/Documents/ENV/bin/activate
 module load mujoco mpi4py
-module load dm_control
 
 SECONDS=0
 python Reacher_naive.py --seed $SLURM_ARRAY_TASK_ID  --type "easy" --env "reacher" --log_dir $SCRATCH/avg_discount/dm_control/ --epochs 500&
