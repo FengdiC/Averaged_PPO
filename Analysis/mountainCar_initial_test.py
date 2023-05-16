@@ -161,13 +161,18 @@ class PPOBuffer:
 # write a train loop
 
 # compute the initial state distribution
-def est_initial(env,bins):
+def est_initial(env,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
     low = np.maximum(low, -1000 * np.ones(n))
     high = env.observation_space.high
     high = np.minimum(high, 1000 * np.ones(n))
     state_steps = (high - low) / bins
+    if dim!=None:
+        n = dim.shape[0]
+        low = low[dim]
+        high = high[dim]
+        state_steps = state_steps[dim]
 
     counts = np.zeros((bins, )*n)
     for k in range(5000):
@@ -295,20 +300,24 @@ def compute_c_D(env,data,gamma,bins,num_traj):
     indices = np.argwhere(counts)
     return est, sampling, indices,counts
 
-def est_sampling(env,data,bins):
+def est_sampling(env,data,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
     low = np.maximum(low,-1000*np.ones(n))
     high = env.observation_space.high
     high = np.minimum(high, 1000 * np.ones(n))
     state_steps = (high - low) / bins
+    if dim!=None:
+        n = dim.shape[0]
+        low = low[dim]
+        high = high[dim]
+        state_steps = state_steps[dim]
 
     counts = np.zeros((bins, )*n)
     for i in range(data['obs'].size(dim=0)):
         s = data['obs'][i].numpy()
         idx = (s - low) / state_steps
         idx = idx.astype(int)
-        print(idx)
         counts[idx] += 1
 
     counts = counts.flatten()
@@ -461,9 +470,17 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
     buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam)
 
-    bins = 4
+    # discretize the state space to estimate state distributions
+    bins = 11
+    # but we only study three dimension of states
     n = env.observation_space.shape[0]
-    initial = est_initial(env, bins)
+    if n>3:
+        a = np.arange(n)
+        np.random.shuffle(a)
+        dim = a[:3]
+    else:
+        dim = None
+    initial = est_initial(env, bins,dim)
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
@@ -512,9 +529,9 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         # ratio,_, diff_dist = bias_compare(discounted, sampling, indices, counts, initial,d_pi, correction, est)
 
         # only compute distribution difference between the initial and the sampling
-        sampling = est_sampling(env,data,bins)
+        sampling = est_sampling(env,data,bins,dim)
         ratio = 0
-        diff_dist = np.sum(np.abs(initial-sampling))/(bins**n)
+        diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
