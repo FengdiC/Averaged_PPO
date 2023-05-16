@@ -505,7 +505,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         # ratio,_, diff_dist = bias_compare(discounted, sampling, indices, counts, initial,d_pi, correction, est)
 
         # only compute distribution difference between the initial and the sampling
-        bins=12
+        bins=6
         n = env.observation_space.shape[0]
         initial = est_initial(env, bins)
         sampling = est_sampling(env,data,bins)
