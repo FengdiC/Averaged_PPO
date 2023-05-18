@@ -180,6 +180,7 @@ def est_initial(env,bins,dim=None):
         if np.any(dim != None):
             o = o[dim]
         idx = (o-low)/state_steps
+        print(idx)
         idx = idx.astype(int)
         counts[idx] += 1
     counts /= 5000
