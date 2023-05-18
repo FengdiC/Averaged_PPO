@@ -181,6 +181,7 @@ def est_initial(env,bins,dim=None):
             o = np.clip(o[dim],-100,100)
         idx = (o-low)/state_steps
         idx = idx.astype(int)
+        print(counts[idx])
         counts[idx] += 1
     counts /= 5000
     counts = counts.flatten()
@@ -538,7 +539,6 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         sampling = est_sampling(env,data,bins,dim)
         print(np.sum(sampling))
         print(initial[:10],":::",sampling[:10])
-        print(dim)
         ratio = 0
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
 
