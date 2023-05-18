@@ -164,9 +164,9 @@ class PPOBuffer:
 def est_initial(env,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low, -1 * np.ones(n))
+    low = np.maximum(low, -3 * np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 1 * np.ones(n))
+    high = np.minimum(high, 3 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         n = dim.shape[0]
@@ -178,7 +178,7 @@ def est_initial(env,bins,dim=None):
     for k in range(5000):
         o = env.reset()
         if np.any(dim != None):
-            o = np.clip(o[dim],-1,1)
+            o = np.clip(o[dim],-3,3)
         idx = (o-low)/state_steps
         idx = idx.astype(int)
         counts[tuple(idx)] += 1
@@ -305,9 +305,9 @@ def compute_c_D(env,data,gamma,bins,num_traj):
 def est_sampling(env,data,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low,-1*np.ones(n))
+    low = np.maximum(low,-3*np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 1 * np.ones(n))
+    high = np.minimum(high, 3 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         n = dim.shape[0]
@@ -320,9 +320,10 @@ def est_sampling(env,data,bins,dim=None):
         s = data['obs'][i].numpy()
         if np.any(dim != None):
             s=s[dim]
-            s = np.clip(s, -1, 1)
+            s = np.clip(s, -3, 3)
         idx = (s - low) / state_steps
         idx = idx.astype(int)
+        idx = np.clip(idx,0,10)
         counts[tuple(idx)]  += 1
 
     counts = counts.flatten()
