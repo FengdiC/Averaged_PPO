@@ -485,6 +485,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     else:
         dim = None
     initial = est_initial(env, bins,dim)
+    print(np.sum(initial))
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
@@ -534,6 +535,8 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # only compute distribution difference between the initial and the sampling
         sampling = est_sampling(env,data,bins,dim)
+        print(np.sum(sampling))
+        print(initial[:10],":::",sampling[:10])
         ratio = 0
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
 
@@ -721,59 +724,55 @@ def setaxes():
     #     tick.label.set_fontsize(ax.getxticklabelsize())
 
 def plot_result():
-    filename = 'progressMountainCarContinuous-error243.csv'
-    file = os.path.join('./', filename)
-    dummy = os.path.join('./ready/', filename)
-    with open(file, 'r') as read_obj, open(dummy, 'w') as write_obj:
-        # Iterate over the given list of strings and write them to dummy file as lines
-        Lines = read_obj.readlines()
-        Lines[0] = Lines[0].replace('\n', ',hyperparam2\n')
-        for line in Lines:
-            write_obj.write(line)
+    for filename in os.listdir('./dist'):
+        file = os.path.join('./dist', filename)
+        if not file.endswith('.csv'):
+            continue
+        # checking if it is a file
+        dummy = os.path.join('./dist_ready', filename)
+        print(file)
+        with open(file, 'r') as read_obj, open(dummy, 'w') as write_obj:
+            # Iterate over the given list of strings and write them to dummy file as lines
+            Lines = read_obj.readlines()
+            Lines[0] = Lines[0].replace('\n', ',hyperparam2\n')
+            for line in Lines:
+                write_obj.write(line)
 
-    name = '0.001-1.64-104-0.27-0.0044-[32  32]-0.995'
-    data = pd.read_csv('./ready/progressMountainCarContinuous-error243.csv',
-                       header=0, parse_dates={'timestamp': ['hyperparam','hyperparam2']},index_col='timestamp')
-    data.columns = data.columns.astype(int)
-    data = data.sort_index(axis=1, ascending=True)
-    returns = []
-    ratios =[]
-    dist_diffs = []
-    for seed in range(10):
-        rets = data.loc[name +'-' +str(seed)].to_numpy()
-        returns.append(rets)
-        ratios.append(data.loc[name+'-' +str(seed)+'-ratio'].to_numpy())
-        dist_diffs.append(data.loc[name+'-' +str(seed)+'-dist'].to_numpy())
+    plt.figure()
+    for filename in os.listdir('./dist_ready'):
+        file = os.path.join('./dist_ready', filename)
+        if not file.endswith('.csv'):
+            continue
 
-    plt.figure(figsize=(12, 6), dpi=60)
-    setaxes()
-    setsizes()
-    ratios = np.mean(ratios, axis=0)
-    plt.subplot(121)
-    plt.plot(data.columns, ratios, color='tab:orange', label='error ratio')
-    plt.xlabel("steps")
-    plt.ylabel("Error Ratio")
-    setaxes()
-    # define y_axis, x_axis
-    setsizes()
-    plt.xticks(fontsize=17, rotation=45)
-    plt.yticks(fontsize=17)
-    plt.legend(prop={"size": 16})
-    plt.tight_layout()
+        data = pd.read_csv(file,header=0, parse_dates={'timestamp': ['hyperparam','hyperparam2']},
+                           index_col='timestamp')
+        data.columns = data.columns.astype(int)
+        data = data.sort_index(axis=1, ascending=True)
+        name = data.index[0]
+        name = name[:-2]
+        returns = []
+        ratios =[]
+        dist_diffs = []
+        for seed in range(10):
+            rets = data.loc[name +'-' +str(seed)].to_numpy()
+            returns.append(rets)
+            ratios.append(data.loc[name+'-' +str(seed)+'-ratio'].to_numpy())
+            dist_diffs.append(data.loc[name+'-' +str(seed)+'-dist'].to_numpy())
+        mean = np.mean(dist_diffs, axis=0)
+        plt.subplot(122)
+        plt.plot(data.columns, mean, label=filename)
 
-    mean = np.mean(dist_diffs, axis=0)
-    plt.subplot(122)
-    plt.plot(data.columns, mean, color='tab:purple', label='distribution difference')
     plt.xlabel("steps")
     plt.ylabel("Distribution Difference")
     setaxes()
     # define y_axis, x_axis
     setsizes()
-    plt.xticks(fontsize=15, rotation=45)
-    plt.yticks(fontsize=17)
-    plt.legend(prop={"size": 16})
+    # plt.xticks(fontsize=15, rotation=45)
+    # plt.yticks(fontsize=17)
+    # plt.legend(prop={"size": 16})
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
-tune_Reacher()
-# plot_result()
+# tune_Reacher()
+plot_result()
