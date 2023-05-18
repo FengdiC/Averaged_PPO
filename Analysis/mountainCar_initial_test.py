@@ -164,9 +164,9 @@ class PPOBuffer:
 def est_initial(env,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low, -1000 * np.ones(n))
+    low = np.maximum(low, -100 * np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 1000 * np.ones(n))
+    high = np.minimum(high, 100 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         n = dim.shape[0]
@@ -178,9 +178,8 @@ def est_initial(env,bins,dim=None):
     for k in range(5000):
         o = env.reset()
         if np.any(dim != None):
-            o = o[dim]
+            o = np.clip(o[dim],-100,100)
         idx = (o-low)/state_steps
-        print(idx)
         idx = idx.astype(int)
         counts[idx] += 1
     counts /= 5000
@@ -306,9 +305,9 @@ def compute_c_D(env,data,gamma,bins,num_traj):
 def est_sampling(env,data,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low,-1000*np.ones(n))
+    low = np.maximum(low,-100*np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 1000 * np.ones(n))
+    high = np.minimum(high, 100 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         n = dim.shape[0]
@@ -321,6 +320,7 @@ def est_sampling(env,data,bins,dim=None):
         s = data['obs'][i].numpy()
         if np.any(dim != None):
             s=s[dim]
+            s = np.clip(s, -100, 100)
         idx = (s - low) / state_steps
         idx = idx.astype(int)
         counts[idx] += 1
@@ -538,6 +538,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         sampling = est_sampling(env,data,bins,dim)
         print(np.sum(sampling))
         print(initial[:10],":::",sampling[:10])
+        print(dim)
         ratio = 0
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
 
