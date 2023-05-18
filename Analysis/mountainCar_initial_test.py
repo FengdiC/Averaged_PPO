@@ -164,9 +164,9 @@ class PPOBuffer:
 def est_initial(env,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low, -10 * np.ones(n))
+    low = np.maximum(low, -1 * np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 10 * np.ones(n))
+    high = np.minimum(high, 1 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         n = dim.shape[0]
@@ -178,7 +178,7 @@ def est_initial(env,bins,dim=None):
     for k in range(5000):
         o = env.reset()
         if np.any(dim != None):
-            o = np.clip(o[dim],-10,10)
+            o = np.clip(o[dim],-1,1)
         idx = (o-low)/state_steps
         idx = idx.astype(int)
         counts[tuple(idx)] += 1
@@ -305,9 +305,9 @@ def compute_c_D(env,data,gamma,bins,num_traj):
 def est_sampling(env,data,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low,-10*np.ones(n))
+    low = np.maximum(low,-1*np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 10 * np.ones(n))
+    high = np.minimum(high, 1 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         n = dim.shape[0]
@@ -320,7 +320,7 @@ def est_sampling(env,data,bins,dim=None):
         s = data['obs'][i].numpy()
         if np.any(dim != None):
             s=s[dim]
-            s = np.clip(s, -10, 10)
+            s = np.clip(s, -1, 1)
         idx = (s - low) / state_steps
         idx = idx.astype(int)
         counts[tuple(idx)]  += 1
@@ -486,7 +486,6 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     else:
         dim = None
     initial = est_initial(env, bins,dim)
-    print(np.sum(initial))
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
@@ -536,10 +535,10 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # only compute distribution difference between the initial and the sampling
         sampling = est_sampling(env,data,bins,dim)
-        print(np.sum(sampling))
         print(initial[:10],":::",sampling[:10])
         ratio = 0
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
+        print(diff_dist)
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
