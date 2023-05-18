@@ -518,7 +518,7 @@ def tune_Reacher():
     # Torch Shenanigans fix
     set_one_thread()
 
-    logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-' + str(args.seed)+ str(args.env))
+    logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-' + str(args.seed)+ str(args.type))
 
     returns = []
     for seed in seeds:
