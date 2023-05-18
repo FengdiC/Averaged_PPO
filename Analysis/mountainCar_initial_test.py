@@ -181,9 +181,7 @@ def est_initial(env,bins,dim=None):
             o = np.clip(o[dim],-10,10)
         idx = (o-low)/state_steps
         idx = idx.astype(int)
-        print(counts.shape)
-        print(idx)
-        counts[idx] += 1
+        counts[tuple(idx)] += 1
     counts /= 5000
     counts = counts.flatten()
     return counts
@@ -292,8 +290,8 @@ def compute_c_D(env,data,gamma,bins,num_traj):
         s = data['obs'][i].numpy()
         idx = (s - low) / state_steps
         idx = idx.astype(int)
-        counts[idx] += 1
-        numerator[idx] += gamma ** tim[i].item()
+        counts[tuple(idx)]  += 1
+        numerator[tuple(idx)] += gamma ** tim[i].item()
     numerator /= num_traj
     c_D = data['obs'].size(dim=0) * (1 - gamma) * numerator / (counts + 0.001)
 
@@ -325,7 +323,7 @@ def est_sampling(env,data,bins,dim=None):
             s = np.clip(s, -10, 10)
         idx = (s - low) / state_steps
         idx = idx.astype(int)
-        counts[idx] += 1
+        counts[tuple(idx)]  += 1
 
     counts = counts.flatten()
     sampling = counts / data['obs'].size(dim=0)
