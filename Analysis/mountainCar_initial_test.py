@@ -774,5 +774,5 @@ def plot_result():
     plt.tight_layout()
     plt.show()
 
-# tune_Reacher()
-plot_result()
+tune_Reacher()
+# plot_result()
