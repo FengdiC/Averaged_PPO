@@ -164,11 +164,12 @@ class PPOBuffer:
 def est_initial(env,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low, -1 * np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 1 * np.ones(n))
     state_steps = (high - low) / bins
     if np.any(dim!=None):
+        low = np.maximum(low, -1 * np.ones(n))
+        high = np.minimum(high, 1 * np.ones(n))
+        state_steps = (high - low) / bins
         n = dim.shape[0]
         low = low[dim]
         high = high[dim]
@@ -306,11 +307,13 @@ def compute_c_D(env,data,gamma,bins,num_traj):
 def est_sampling(env,data,bins,dim=None):
     n = env.observation_space.shape[0]
     low = env.observation_space.low
-    low = np.maximum(low,-1*np.ones(n))
     high = env.observation_space.high
-    high = np.minimum(high, 1 * np.ones(n))
+
     state_steps = (high - low) / bins
     if np.any(dim!=None):
+        low = np.maximum(low, -1 * np.ones(n))
+        high = np.minimum(high, 1 * np.ones(n))
+        state_steps = (high - low) / bins
         n = dim.shape[0]
         low = low[dim]
         high = high[dim]
