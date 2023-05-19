@@ -167,14 +167,14 @@ def est_initial(env,bins,dim=None):
     high = env.observation_space.high
     state_steps = (high - low) / bins
     if np.any(dim!=None):
-        low = np.maximum(low, -1 * np.ones(n))
-        high = np.minimum(high, 1 * np.ones(n))
-        state_steps = (high - low) / bins
+        if np.all(env.observation_space.low<-100):
+            low = np.maximum(low, -1 * np.ones(n))
+            high = np.minimum(high, 1 * np.ones(n))
+            state_steps = (high - low) / bins
         n = dim.shape[0]
         low = low[dim]
         high = high[dim]
         state_steps = state_steps[dim]
-
     counts = np.zeros((bins, )*n)
     for k in range(5000):
         o = env.reset()
@@ -311,9 +311,10 @@ def est_sampling(env,data,bins,dim=None):
 
     state_steps = (high - low) / bins
     if np.any(dim!=None):
-        low = np.maximum(low, -1 * np.ones(n))
-        high = np.minimum(high, 1 * np.ones(n))
-        state_steps = (high - low) / bins
+        if np.all(env.observation_space.low < -100):
+            low = np.maximum(low, -1 * np.ones(n))
+            high = np.minimum(high, 1 * np.ones(n))
+            state_steps = (high - low) / bins
         n = dim.shape[0]
         low = low[dim]
         high = high[dim]
