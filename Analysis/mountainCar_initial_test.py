@@ -480,13 +480,13 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
     buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam)
 
     # discretize the state space to estimate state distributions
-    bins = 9
+    bins = 11
     # but we only study three dimension of states
     n = env.observation_space.shape[0]
     if n>3:
         a = np.arange(n)
         np.random.shuffle(a)
-        dim = a[:2]
+        dim = a[:3]
     else:
         dim = None
     initial = est_initial(env, bins,dim)
@@ -541,7 +541,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         sampling = est_sampling(env,data,bins,dim)
         print(initial[:10],":::",sampling[:10])
         ratio = 0
-        diff_dist = np.max(np.abs(initial-sampling))
+        diff_dist = np.sum(np.abs(initial-sampling))
         print(diff_dist)
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
