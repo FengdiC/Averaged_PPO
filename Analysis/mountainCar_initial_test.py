@@ -541,7 +541,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         sampling = est_sampling(env,data,bins,dim)
         print(initial[:10],":::",sampling[:10])
         ratio = 0
-        diff_dist = np.mean(np.abs(initial-sampling))
+        diff_dist = np.median(np.abs(initial-sampling))
         print(diff_dist)
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
