@@ -82,6 +82,46 @@ def argsparser():
     args = parser.parse_args()
     return args
 
+def kl_mvn(m0, S0, m1, S1):
+    """
+    https://stackoverflow.com/questions/44549369/kullback-leibler-divergence-from-gaussian-pm-pv-to-gaussian-qm-qv
+    The following function computes the KL-Divergence between any two
+    multivariate normal distributions
+    (no need for the covariance matrices to be diagonal)
+    Kullback-Liebler divergence from Gaussian pm,pv to Gaussian qm,qv.
+    Also computes KL divergence from a single Gaussian pm,pv to a set
+    of Gaussians qm,qv.
+    Diagonal covariances are assumed.  Divergence is expressed in nats.
+    - accepts stacks of means, but only one S0 and S1
+    From wikipedia
+    KL( (m0, S0) || (m1, S1))
+         = .5 * ( tr(S1^{-1} S0) + log |S1|/|S0| +
+                  (m1 - m0)^T S1^{-1} (m1 - m0) - N )
+    # 'diagonal' is [1, 2, 3, 4]
+    tf.diag(diagonal) ==> [[1, 0, 0, 0]
+                          [0, 2, 0, 0]
+                          [0, 0, 3, 0]
+                          [0, 0, 0, 4]]
+    # See wikipedia on KL divergence special case.
+    #KL = 0.5 * tf.reduce_sum(1 + t_log_var - K.square(t_mean) - K.exp(t_log_var), axis=1)
+                if METHOD['name'] == 'kl_pen':
+                self.tflam = tf.placeholder(tf.float32, None, 'lambda')
+                kl = tf.distributions.kl_divergence(oldpi, pi)
+                self.kl_mean = tf.reduce_mean(kl)
+                self.aloss = -(tf.reduce_mean(surr - self.tflam * kl))
+    """
+    # store inv diag covariance of S1 and diff between means
+    N = m0.shape[0]
+    iS1 = np.linalg.inv(S1)
+    diff = m1 - m0
+
+    # kl is made of three terms
+    tr_term   = np.trace(iS1 @ S0)
+    det_term  = np.log(np.linalg.det(S1)/np.linalg.det(S0)) #np.sum(np.log(S1)) - np.sum(np.log(S0))
+    quad_term = diff.T @ np.linalg.inv(S1) @ diff #np.sum( (diff*diff) * iS1, axis=1)
+    #print(tr_term,det_term,quad_term)
+    return .5 * (tr_term + det_term + quad_term - N)
+
 class PPOBuffer:
     """
     A buffer for storing trajectories experienced by a PPO agent interacting
@@ -539,7 +579,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         # only compute distribution difference between the initial and the sampling
         sampling = np.mean(data['obs'].numpy(),axis=0)
         sampling_std = np.std(data['obs'].numpy(),axis=0)
-        ratio = sampling.shape[0]*np.log(sampling_std/inital_std) + sampling.shape[0]*inital_std**2/sampling_std**2+(initial-sampling)**2/sampling_std**2
+        ratio = kl_mvn(initial,np.diag(inital_std**2),sampling,np.diag(sampling_std**2))
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
         print(ratio,":::",diff_dist)
 
