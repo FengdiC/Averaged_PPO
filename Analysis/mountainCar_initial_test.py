@@ -182,7 +182,7 @@ def est_initial(env,bins,dim=None):
             o = o[dim]
         idx = (o-low)/state_steps
         idx = idx.astype(int)
-        idx = np.clip(idx, 0, 10)
+        idx = np.clip(idx, 0, bins-1)
         counts[tuple(idx)] += 1
     counts /= 5000
     counts = counts.flatten()
@@ -327,7 +327,7 @@ def est_sampling(env,data,bins,dim=None):
             s=s[dim]
         idx = (s - low) / state_steps
         idx = idx.astype(int)
-        idx = np.clip(idx,0,10)
+        idx = np.clip(idx,0,bins-1)
         counts[tuple(idx)]  += 1
 
     counts = counts.flatten()
