@@ -536,7 +536,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         # ratio,_, diff_dist = bias_compare(discounted, sampling, indices, counts, initial,d_pi, correction, est)
 
         # only compute distribution difference between the initial and the sampling
-        sampling = np.mean(data['obs'],axis=0)
+        sampling = np.mean(data['obs'].item(),axis=0)
         ratio = 0
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
         print(diff_dist)
