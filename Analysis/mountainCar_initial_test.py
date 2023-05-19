@@ -488,6 +488,7 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         o = env.reset()
         states[k] = o
     initial = np.mean(states,axis=0)
+    inital_std = np.std(states,axis=0)
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
@@ -537,9 +538,10 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # only compute distribution difference between the initial and the sampling
         sampling = np.mean(data['obs'].numpy(),axis=0)
-        ratio = 0
+        sampling_std = np.std(data['obs'].numpy(),axis=0)
+        ratio = sampling.shape[0]*np.log(sampling_std/inital_std) + sampling.shape[0]*inital_std**2/sampling_std**2+(initial-sampling)**2/sampling_std**2
         diff_dist = np.sum(np.abs(initial-sampling))/(initial.shape[0])
-        print(diff_dist)
+        print(ratio,":::",diff_dist)
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
