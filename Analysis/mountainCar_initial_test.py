@@ -321,6 +321,7 @@ def est_sampling(env,data,bins,dim=None):
         s = data['obs'][i].numpy()
         if np.any(dim != None):
             s=s[dim]
+            print(s)
             s = np.clip(s, -1, 1)
         idx = (s - low) / state_steps
         idx = idx.astype(int)
