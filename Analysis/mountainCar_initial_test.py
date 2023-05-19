@@ -160,34 +160,6 @@ class PPOBuffer:
 
 # write a train loop
 
-# compute the initial state distribution
-def est_initial(env,bins,dim=None):
-    n = env.observation_space.shape[0]
-    low = env.observation_space.low
-    high = env.observation_space.high
-    state_steps = (high - low) / bins
-    if np.any(dim!=None):
-        if np.all(env.observation_space.low<-100):
-            low = np.maximum(low, -1 * np.ones(n))
-            high = np.minimum(high, 1 * np.ones(n))
-            state_steps = (high - low) / bins
-        n = dim.shape[0]
-        low = low[dim]
-        high = high[dim]
-        state_steps = state_steps[dim]
-    counts = np.zeros((bins, )*n)
-    for k in range(5000):
-        o = env.reset()
-        if np.any(dim != None):
-            o = o[dim]
-        idx = (o-low)/state_steps
-        idx = idx.astype(int)
-        idx = np.clip(idx, 0, bins-1)
-        counts[tuple(idx)] += 1
-    counts /= 5000
-    counts = counts.flatten()
-    return counts
-
 # estimate the transition probability under any policy with continuous actions
 """
 velocity_{t+1} = velocity_t + force * self.power - 0.0025 * cos(3 * position_t)
@@ -304,35 +276,6 @@ def compute_c_D(env,data,gamma,bins,num_traj):
     indices = np.argwhere(counts)
     return est, sampling, indices,counts
 
-def est_sampling(env,data,bins,dim=None):
-    n = env.observation_space.shape[0]
-    low = env.observation_space.low
-    high = env.observation_space.high
-
-    state_steps = (high - low) / bins
-    if np.any(dim!=None):
-        if np.all(env.observation_space.low < -100):
-            low = np.maximum(low, -1 * np.ones(n))
-            high = np.minimum(high, 1 * np.ones(n))
-            state_steps = (high - low) / bins
-        n = dim.shape[0]
-        low = low[dim]
-        high = high[dim]
-        state_steps = state_steps[dim]
-
-    counts = np.zeros((bins, )*n)
-    for i in range(data['obs'].size(dim=0)):
-        s = data['obs'][i].numpy()
-        if np.any(dim != None):
-            s=s[dim]
-        idx = (s - low) / state_steps
-        idx = idx.astype(int)
-        idx = np.clip(idx,0,bins-1)
-        counts[tuple(idx)]  += 1
-
-    counts = counts.flatten()
-    sampling = counts / data['obs'].size(dim=0)
-    return sampling
 
 def bias_compare(discounted,sampling,indices,counts, initial,d_pi,correction,est):
     ## this method counts the number of times of each state shown in one buffer.
@@ -490,6 +433,50 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
         dim = a[:2]
     else:
         dim = None
+
+    n = env.observation_space.shape[0]
+    low = env.observation_space.low
+    high = env.observation_space.high
+
+    state_steps = (high - low) / bins
+    if np.any(dim != None):
+        if np.all(env.observation_space.low < -100):
+            low = np.maximum(low, -1 * np.ones(n))
+            high = np.minimum(high, 1 * np.ones(n))
+            state_steps = (high - low) / bins
+        n = dim.shape[0]
+        low = low[dim]
+        high = high[dim]
+        state_steps = state_steps[dim]
+
+    # compute the initial state distribution
+    def est_initial(env, bins, dim=None):
+        counts = np.zeros((bins,) * n)
+        for k in range(5000):
+            o = env.reset()
+            if np.any(dim != None):
+                o = o[dim]
+            idx = (o - low) / state_steps
+            idx = idx.astype(int)
+            idx = np.clip(idx, 0, bins - 1)
+            counts[tuple(idx)] += 1
+        counts /= 5000
+        counts = counts.flatten()
+        return counts
+
+    def est_sampling(env, data, bins, dim=None):
+        counts = np.zeros((bins,) * n)
+        for i in range(data['obs'].size(dim=0)):
+            s = data['obs'][i].numpy()
+            if np.any(dim != None):
+                s = s[dim]
+            idx = (s - low) / state_steps
+            idx = idx.astype(int)
+            idx = np.clip(idx, 0, bins - 1)
+            counts[tuple(idx)] += 1
+        counts = counts.flatten()
+        sampling = counts / data['obs'].size(dim=0)
+        return sampling
     initial = est_initial(env, bins,dim)
 
     # Set up function for computing PPO policy loss
