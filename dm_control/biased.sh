@@ -4,15 +4,15 @@
 #SBATCH --time=0-24:00
 #SBATCH --output=%N-%j.out
 #SBATCH --account=def-ashique
-#SBATCH --array=1-900
+#SBATCH --array=1-250
 
 source $HOME/Documents/ENV/bin/activate
 module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
-python Reacher_biased.py --seed $SLURM_ARRAY_TASK_ID  --type "catch" --env "ball_in_cup" --log_dir $SCRATCH/avg_discount/dm_control/ --epochs 500&
-#python Reacher_biased.py --seed $SLURM_ARRAY_TASK_ID  --type "hard" --env "reacher" --log_dir $SCRATCH/avg_discount/dm_control/ --epochs 500&
+#python Reacher_biased.py --seed $SLURM_ARRAY_TASK_ID  --type "catch" --env "ball_in_cup" --log_dir $SCRATCH/avg_discount/dm_control/ --epochs 500&
+python Reacher_biased.py --seed $SLURM_ARRAY_TASK_ID  --type "easy" --env "point_mass" --log_dir $SCRATCH/avg_discount/dm_control/ --epochs 500&
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h
