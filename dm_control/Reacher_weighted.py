@@ -466,6 +466,10 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
         # discounteds = []
         # clips=[]
         # clips.append(np.ones(data['tim'].size(dim=0)))
+        sampling = est_sampling(env, data, bins, dim)
+        print(initial[:10], ":::", sampling[:10])
+        diff_dist = np.max(np.abs(initial - sampling))
+        print(diff_dist)
         for i in range(train_pi_iters):
             # # compute the discounted distribution of the old policy
             # correction, d_pi, discounted = compute_correction(env, ac, gamma)
@@ -473,10 +477,6 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
             # d_pis.append(d_pi)
             # discounteds.append(discounted)
             # only compute distribution difference between the initial and the sampling
-            sampling = est_sampling(env, data, bins, dim)
-            print(initial[:10], ":::", sampling[:10])
-            diff_dist = np.max(np.abs(initial - sampling))
-            print(diff_dist)
 
             pi_optimizer.zero_grad()
             loss_pi, pi_info, clipped = compute_loss_pi(data)
@@ -488,7 +488,6 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
             loss_pi.backward()
             mpi_avg_grads(ac.pi)  # average grads across MPI processes
             pi_optimizer.step()
-        return diff_dist
 
         logger.store(StopIter=i)
 
@@ -506,7 +505,7 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
                      KL=kl, Entropy=ent, ClipFrac=cf,
                      DeltaLossPi=(loss_pi.item() - pi_l_old),
                      DeltaLossV=(loss_v.item() - v_l_old))
-
+        return diff_dist
     # Prepare for interaction with environment
     start_time = time.time()
     time_step, ep_ret, ep_len = env.reset(), 0, 0
