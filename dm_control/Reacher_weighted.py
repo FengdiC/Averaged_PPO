@@ -186,6 +186,58 @@ def compute_correction(env,agent,gamma,policy=np.array([None,None])):
     discounted = correction * d_pi
     return correction,d_pi,discounted
 
+# compute the initial state distribution
+def est_initial(env,bins,dim=None):
+    time_step = env.reset()
+    n = np.concatenate([time_step.observation[key] for key in time_step.observation.keys()]).shape[0]
+    low = -2*np.ones(n)
+    high = 2*np.ones(n)
+    state_steps = (high - low) / bins
+    if np.any(dim!=None):
+        n = dim.shape[0]
+        low = low[dim]
+        high = high[dim]
+        state_steps = state_steps[dim]
+    counts = np.zeros((bins, )*n)
+    for k in range(5000):
+        time_step= env.reset()
+        o = np.concatenate([time_step.observation[key] for key in time_step.observation.keys()])
+        if np.any(dim != None):
+            o = o[dim]
+        idx = (o-low)/state_steps
+        idx = idx.astype(int)
+        idx = np.clip(idx, 0, bins-1)
+        counts[tuple(idx)] += 1
+    counts /= 5000
+    counts = counts.flatten()
+    return counts
+
+def est_sampling(env,data,bins,dim=None):
+    time_step = env.reset()
+    n = np.concatenate([time_step.observation[key] for key in time_step.observation.keys()]).shape[0]
+    low = -2 * np.ones(n)
+    high = 2 * np.ones(n)
+
+    state_steps = (high - low) / bins
+    if np.any(dim!=None):
+        n = dim.shape[0]
+        low = low[dim]
+        high = high[dim]
+        state_steps = state_steps[dim]
+
+    counts = np.zeros((bins, )*n)
+    for i in range(data['obs'].size(dim=0)):
+        s = data['obs'][i].numpy()
+        if np.any(dim != None):
+            s=s[dim]
+        idx = (s - low) / state_steps
+        idx = idx.astype(int)
+        idx = np.clip(idx,0,bins-1)
+        counts[tuple(idx)]  += 1
+    counts = counts.flatten()
+    sampling = counts / data['obs'].size(dim=0)
+    return sampling
+
 def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dict(), seed=0,
                  steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
                  vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
@@ -325,6 +377,16 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
     # Set up experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
     buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam)
+    bins = 8
+    # but we only study three dimension of states
+    n = obs_dim
+    if n > 5:
+        a = np.arange(n)
+        np.random.shuffle(a)
+        dim = a[:5]
+    else:
+        dim = None
+    initial = est_initial(env, bins, dim)
 
     def compute_c_D(data,num_traj=12):
         states = env.get_states()
@@ -410,6 +472,12 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
             # corrections.append(correction)
             # d_pis.append(d_pi)
             # discounteds.append(discounted)
+            # only compute distribution difference between the initial and the sampling
+            sampling = est_sampling(env, data, bins, dim)
+            print(initial[:10], ":::", sampling[:10])
+            diff_dist = np.max(np.abs(initial - sampling))
+            print(diff_dist)
+
             pi_optimizer.zero_grad()
             loss_pi, pi_info, clipped = compute_loss_pi(data)
             # clips.append(clipped)
@@ -420,6 +488,7 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
             loss_pi.backward()
             mpi_avg_grads(ac.pi)  # average grads across MPI processes
             pi_optimizer.step()
+        return diff_dist
 
         logger.store(StopIter=i)
 
@@ -444,6 +513,7 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
     o = np.concatenate([time_step.observation[key] for key in time_step.observation.keys()])
     rets = []
     avgrets = []
+    diffs = []
 
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
@@ -489,10 +559,11 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
             logger.save_state({'env': env}, None)
 
         # Perform PPO update!
-        update()
+        diff_dist = update()
 
         # Log info about epoch
         avgrets.append(np.mean(rets))
+        diffs.append(diff_dist)
         rets = []
         logger.log_tabular('Epoch', epoch)
         logger.log_tabular('EpRet', with_min_and_max=True)
@@ -509,7 +580,7 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
         logger.log_tabular('StopIter', average_only=True)
         logger.log_tabular('Time', time.time() - start_time)
         logger.dump_tabular()
-    return avgrets
+    return avgrets,diffs
 
 def tune_Reacher():
     args = argsparser()
@@ -524,7 +595,7 @@ def tune_Reacher():
     for seed in seeds:
         hyperparam = random_search(args.seed)
         checkpoint = 4000
-        result = weighted_ppo([args.env,args.type], actor_critic=core.MLPWeightedActorCritic,
+        result,diffs = weighted_ppo([args.env,args.type], actor_critic=core.MLPWeightedActorCritic,
                               ac_kwargs=dict(hidden_sizes=args.hid, critic_hidden_sizes=hyperparam['critic_hid']),
                               epochs=args.epochs,
                               gamma=hyperparam['gamma'], target_kl=hyperparam['target_kl'], vf_lr=hyperparam['vf_lr'],
