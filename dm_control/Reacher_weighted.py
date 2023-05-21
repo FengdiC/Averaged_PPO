@@ -468,10 +468,10 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
         # clips=[]
         # clips.append(np.ones(data['tim'].size(dim=0)))
 
-        # sampling = est_sampling(env, data, bins, dim)
-        # print(initial[:10], ":::", sampling[:10])
-        # diff_dist = np.max(np.abs(initial - sampling))
-        # print(diff_dist)
+        sampling = est_sampling(env, data, bins, dim)
+        print(initial[:10], ":::", sampling[:10])
+        diff_dist = np.max(np.abs(initial - sampling))
+        print(diff_dist)
         for i in range(train_pi_iters):
             # # compute the discounted distribution of the old policy
             # correction, d_pi, discounted = compute_correction(env, ac, gamma)
