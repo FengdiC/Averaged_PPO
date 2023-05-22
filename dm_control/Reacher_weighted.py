@@ -230,7 +230,7 @@ def est_sampling(env,data,bins,dim=None):
         s = data['obs'][i].numpy()
         if np.any(dim != None):
             s=s[dim]
-        print(s)
+        # print(s)
         idx = (s - low) / state_steps
         idx = idx.astype(int)
         idx = np.clip(idx,0,bins-1)
@@ -468,9 +468,9 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
         # clips=[]
         # clips.append(np.ones(data['tim'].size(dim=0)))
 
-        # sampling = est_sampling(env, data, bins, dim)
+        sampling = est_sampling(env, data, bins, dim)
         # print(initial[:10], ":::", sampling[:10])
-        # diff_dist = np.max(np.abs(initial - sampling))
+        diff_dist = np.max(np.abs(initial - sampling))
         # print(diff_dist)
         for i in range(train_pi_iters):
             # # compute the discounted distribution of the old policy
@@ -507,7 +507,7 @@ def weighted_ppo(env_name, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=d
                      KL=kl, Entropy=ent, ClipFrac=cf,
                      DeltaLossPi=(loss_pi.item() - pi_l_old),
                      DeltaLossV=(loss_v.item() - v_l_old))
-        return 0
+        return diff_dist
     # Prepare for interaction with environment
     start_time = time.time()
     time_step, ep_ret, ep_len = env.reset(), 0, 0
@@ -590,7 +590,7 @@ def tune_Reacher():
     # Torch Shenanigans fix
     set_one_thread()
 
-    logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-' + str(args.seed)+ str(args.type))
+    logger.configure(args.log_dir, ['csv'], log_suffix='dist-error-' + str(args.env)+'-' + str(args.seed))
 
     returns = []
     for seed in seeds:
@@ -612,7 +612,7 @@ def tune_Reacher():
         print("hyperparam", '-'.join(name))
         logger.logkv("hyperparam", '-'.join(name))
         for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), ret[n])
+            logger.logkv(str((n + 1) * checkpoint), diffs[n])
         logger.dumpkvs()
 
 tune_Reacher()

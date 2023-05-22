@@ -10,8 +10,8 @@ module load python/3.10
 module load mujoco mpi4py
 
 SECONDS=0
-python Reacher_weighted.py --seed $SLURM_ARRAY_TASK_ID  --type "catch" --env "ball_in_cup" --log_dir $SCRATCH/avg_discount/dm_diff/ --epochs 500&
-python Reacher_weighted.py --seed $SLURM_ARRAY_TASK_ID  --type "easy" --env "point_mass" --log_dir $SCRATCH/avg_discount/dm_diff/ --epochs 500&
+python Reacher_weighted.py --seed 220  --type "catch" --env "ball_in_cup" --log_dir $SCRATCH/avg_discount/dm_diff/ --epochs 500&
+python Reacher_weighted.py --seed 180 --type "easy" --env "point_mass" --log_dir $SCRATCH/avg_discount/dm_diff/ --epochs 500&
 
 echo "Baseline job $seed took $SECONDS"
 sleep 72h

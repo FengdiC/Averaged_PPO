@@ -168,8 +168,8 @@ def est_initial(env,bins,dim=None):
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         if np.all(env.observation_space.low<-100):
-            low = np.maximum(low, -2 * np.ones(n))
-            high = np.minimum(high, 2 * np.ones(n))
+            low = np.maximum(low, -4 * np.ones(n))
+            high = np.minimum(high, 4 * np.ones(n))
             state_steps = (high - low) / bins
         n = dim.shape[0]
         low = low[dim]
@@ -312,8 +312,8 @@ def est_sampling(env,data,bins,dim=None):
     state_steps = (high - low) / bins
     if np.any(dim!=None):
         if np.all(env.observation_space.low < -100):
-            low = np.maximum(low, -2 * np.ones(n))
-            high = np.minimum(high, 2 * np.ones(n))
+            low = np.maximum(low, -4 * np.ones(n))
+            high = np.minimum(high, 4 * np.ones(n))
             state_steps = (high - low) / bins
         n = dim.shape[0]
         low = low[dim]
@@ -539,10 +539,10 @@ def weighted_ppo(env_fn, actor_critic=core.MLPWeightedActorCritic, ac_kwargs=dic
 
         # only compute distribution difference between the initial and the sampling
         sampling = est_sampling(env,data,bins,dim)
-        print(initial[:10],":::",sampling[:10])
+        # print(initial[:10],":::",sampling[:10])
         ratio = 0
         diff_dist = np.max(np.abs(initial-sampling))
-        print(diff_dist)
+        # print(diff_dist)
 
         pi_l_old, pi_info_old = compute_loss_pi(data)
         pi_l_old = pi_l_old.item()
@@ -679,14 +679,6 @@ def tune_Reacher():
         name.append(str(seed))
         print("hyperparam", '-'.join(name))
         logger.logkv("hyperparam", '-'.join(name))
-        for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), ret[n])
-        logger.dumpkvs()
-        logger.logkv("hyperparam", '-'.join(name) + '-ratio')
-        for n in range(ret.shape[0]):
-            logger.logkv(str((n + 1) * checkpoint), ratio[n])
-        logger.dumpkvs()
-        logger.logkv("hyperparam", '-'.join(name) + '-dist')
         for n in range(ret.shape[0]):
             logger.logkv(str((n + 1) * checkpoint), dist_diff[n])
         logger.dumpkvs()
