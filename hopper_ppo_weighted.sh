@@ -11,6 +11,7 @@ module load mujoco mpi4py
 
 SECONDS=0
 python Hyperparam/weighted_ppo_tune.py --seed 394 --log_dir $SCRATCH/avg_discount/swimmer --env 'Swimmer-v4' --epochs 1250&
+python Hyperparam/weighted_ppo_tune.py --log_dir $SCRATCH/avg_discount/swimmer --env="MountainCarContinuous-v0" --seed=243 --epochs 1250&
 #python Hyperparam/weighted_ppo_tune.py --seed 790 --log_dir $SCRATCH/avg_discount/logs99 --env 'Ant-v4' --epochs 500 --gamma 0.99&
 #python Hyperparam/weighted_ppo_tune.py --seed 243 --log_dir $SCRATCH/avg_discount/logs99/ --env 'MountainCarContinuous-v0' --epochs 250 --gamma 0.99&
 #python Hyperparam/weighted_ppo_tune.py --seed 241 --log_dir $SCRATCH/avg_discount/logs99/ --env 'Pendulum-v1' --epochs 250 --gamma 0.99&
