@@ -744,31 +744,8 @@ def plot_result():
                            index_col='timestamp')
         data.columns = data.columns.astype(int)
         data = data.sort_index(axis=1, ascending=True)
-        name = data.index[0]
-        name = name[:-2]
-        returns = []
-        ratios =[]
-        dist_diffs = []
-        for seed in range(10):
-            rets = data.loc[name +'-' +str(seed)].to_numpy()
-            returns.append(rets)
-            ratios.append(data.loc[name+'-' +str(seed)+'-ratio'].to_numpy())
-            dist_diffs.append(data.loc[name+'-' +str(seed)+'-dist'].to_numpy())
-        mean = np.mean(dist_diffs, axis=0)
-        plt.subplot(122)
-        plt.plot(data.columns, mean, label=filename)
+        mean = np.mean(data.to_numpy())
+        print(mean,":::", filename)
 
-    plt.xlabel("steps")
-    plt.ylabel("Distribution Difference")
-    setaxes()
-    # define y_axis, x_axis
-    setsizes()
-    # plt.xticks(fontsize=15, rotation=45)
-    # plt.yticks(fontsize=17)
-    # plt.legend(prop={"size": 16})
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-tune_Reacher()
-# plot_result()
+# tune_Reacher()
+plot_result()
