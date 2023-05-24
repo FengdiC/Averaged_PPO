@@ -23,7 +23,7 @@ logger.configure(args.log_dir, ['csv'], log_suffix='weighted-ppo-tune-'+str(args
 returns = []
 for seed in seeds:
     hyperparam = random_search(args.seed)
-    hyperparam['gamma'] = args.gamma
+    # hyperparam['gamma'] = args.gamma
     checkpoint = 4000
     result = weighted_ppo(lambda: gym.make(args.env), actor_critic=core.MLPWeightedActorCritic,
     ac_kwargs=dict(hidden_sizes=args.hid,critic_hidden_sizes=hyperparam['critic_hid']),epochs=args.epochs,

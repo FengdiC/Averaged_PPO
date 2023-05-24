@@ -23,7 +23,7 @@ logger.configure(args.log_dir, ['csv'], log_suffix='naive-ppo-tune-'+str(args.en
 returns = []
 for seed in seeds:
     hyperparam = random_search(args.seed)
-    hyperparam['gamma'] = args.gamma
+    # hyperparam['gamma'] = args.gamma
     checkpoint = 4000
     result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
                 ac_kwargs=dict(hidden_sizes=args.hid),gamma=hyperparam['gamma'],pi_lr = hyperparam["pi_lr"],
