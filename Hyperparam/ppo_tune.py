@@ -4,6 +4,7 @@ parentdir = os.path.dirname(currentdir)
 granddir = os.path.dirname(parentdir)
 sys.path.insert(0, parentdir)
 from spinup.algos.pytorch.ppo.ppo import argsparser,weighted_ppo,ppo
+from spinup.algos.pytorch.ppo.adv_PPO import ppo as adv_ppo
 from spinup.algos.pytorch.ppo import core
 sys.path.insert(0,granddir)
 from Components import logger
@@ -25,7 +26,7 @@ for seed in seeds:
     hyperparam = random_search(args.seed)
     # hyperparam['gamma'] = args.gamma
     checkpoint = 4000
-    result = ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
+    result = adv_ppo(lambda: gym.make(args.env), actor_critic=core.MLPActorCritic,
                 ac_kwargs=dict(hidden_sizes=args.hid),gamma=hyperparam['gamma'],pi_lr = hyperparam["pi_lr"],
                 target_kl=hyperparam['target_kl'],vf_lr=hyperparam['vf_lr'],epochs=args.epochs,
                 seed=seed,naive=False)
